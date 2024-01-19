@@ -1,0 +1,1 @@
+# solace-ep-eclipse-plugin

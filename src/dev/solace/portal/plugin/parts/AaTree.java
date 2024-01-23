@@ -5,8 +5,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
-import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
@@ -28,13 +26,14 @@ import community.solace.ep.client.model.SchemaVersion;
 import community.solace.ep.wrapper.EventPortalWrapper;
 import community.solace.ep.wrapper.TopicUtils;
 import dev.solace.aaron.useful.TimeUtils;
-import dev.solace.aaron.useful.TimeUtils.Format;
+import dev.solace.aaron.useful.TimeUtils.TimeStringFormat;
 import dev.solace.aaron.useful.WordUtils;
 
 public class AaTree {
 
 	
 	public static int INDENT_SIZE = 4;
+	private static final TimeStringFormat TSF = TimeStringFormat.RELATIVE;
 	
 	final Tree tree;
 	Map<String, TreeItem> rows = new HashMap<>();
@@ -58,13 +57,22 @@ public class AaTree {
 		bFont = new Font(parent.getDisplay(), new FontData( fd.getName(), fd.getHeight(), SWT.BOLD ) );
 		fwFont = new Font(parent.getDisplay(), new FontData( "Consolas", fd.getHeight(), SWT.BOLD ) );
 		if (images == null) initImages(parent.getDisplay());
-		init(0);
+		try {
+			init(0);
+		} catch (Throwable e) {
+			e.printStackTrace();
+			throw e;
+		} finally {
+//			font.dispose();
+//			bFont.dispose();
+//			fwFont.dispose();
+		}
 //		bFont.dispose();
 //		fwFont.dispose();
 		
 		// for tooltips in tree: https://stackoverflow.com/questions/22659055/settooltiptext-for-treeitem-not-defined
-		TreeViewer tv = new TreeViewer(parent);
-		ColumnViewerToolTipSupport.enableFor(tv);
+//		TreeViewer tv = new TreeViewer(parent);
+//		ColumnViewerToolTipSupport.enableFor(tv);
 	}
 
 	private void init(int indent) {
@@ -189,7 +197,7 @@ public class AaTree {
 
 	private void addDomain(ApplicationDomain domain, TreeItem item, int indent) {
 		String time = domain.getUpdatedTime();
-		time = TimeUtils.formatTime(domain.getUpdatedTime(), Format.RELATIVE);
+		time = TimeUtils.formatTime(domain.getUpdatedTime(), TSF);
 		String details = WordUtils.pluralize("Applications", domain.getStats().getApplicationCount());
 		item.setText(new String[] { "Domain", domain.getName(), details, "", "", time, "View in Portal" });
 		item.setImage(images.get("domain"));
@@ -223,7 +231,7 @@ public class AaTree {
 	private void addApp(Application app, TreeItem item, int indent) {
 		String type = "Application";
 		String name = WordUtils.indent(app.getName(), indent);
-		String updated = TimeUtils.formatTime(app.getUpdatedTime(), Format.RELATIVE);
+		String updated = TimeUtils.formatTime(app.getUpdatedTime(), TSF);
 		String details = String.format("%s App, %s",
 				WordUtils.capitalFirst(app.getBrokerType().getValue()),
                 WordUtils.capitalFirst(app.getApplicationType()));
@@ -250,7 +258,7 @@ public class AaTree {
 		String details = WordUtils.pluralize("Event", pubs.size() + subs.size() + both.size());
 		String state = EventPortalWrapper.INSTANCE.getState(appVer.getStateId()).getName();
 		String topic = "";
-		String updated = TimeUtils.formatTime(appVer.getUpdatedTime(), Format.RELATIVE);
+		String updated = TimeUtils.formatTime(appVer.getUpdatedTime(), TSF);
 
 		item.setText(new String[] { type, name, details, state, topic, updated, "View in Portal" });
 //		item.setFont(1, bFont);  // bold the app name
@@ -293,7 +301,7 @@ public class AaTree {
 			String name = WordUtils.indent(vName(vEvent.getVersion(), parent.getName()), indent);
 			String details = WordUtils.capitalFirst(pubSub.big + " " + parent.getBrokerType() + " event");
 			String state = EventPortalWrapper.INSTANCE.getState(vEvent.getStateId()).getName();
-			String updated = TimeUtils.formatTime(vEvent.getUpdatedTime(), Format.RELATIVE);
+			String updated = TimeUtils.formatTime(vEvent.getUpdatedTime(), TSF);
 			String topic = TopicUtils.buildTopic(vEvent.getDeliveryDescriptor());
 			item.setText(new String[] { type, name, details, state, topic, updated, "View in Portal" });
 			item.setForeground(3, getStateColor(vEvent.getStateId()));
@@ -341,7 +349,7 @@ public class AaTree {
 		details += ", " + parent.getSchemaType().toUpperCase() + " schema";
 		details += ", " + vSchema.getContent().length() + " chars";
 
-		String updated = TimeUtils.formatTime(vSchema.getUpdatedTime(), Format.RELATIVE);
+		String updated = TimeUtils.formatTime(vSchema.getUpdatedTime(), TimeStringFormat.RELATIVE);
 
 		item.setText(new String[] { type, name, details, state, "", updated, "View in Portal" });
 		item.setForeground(3, getStateColor(vSchema.getStateId()));

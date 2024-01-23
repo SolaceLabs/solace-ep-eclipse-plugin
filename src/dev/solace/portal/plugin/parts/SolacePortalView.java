@@ -270,6 +270,7 @@ public class SolacePortalView {
 				item.setControl (button);
 	*/
 			} catch (RuntimeException e) {
+				e.printStackTrace();
 				Label l = new Label(tabFolder, SWT.NONE);
 				l.setText("Runtime exception encountered: " + e.toString());
 				item.setControl(l);

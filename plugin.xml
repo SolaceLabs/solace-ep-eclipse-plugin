@@ -11,15 +11,15 @@
       </fragment>
     </extension>
 
-    <extension
+    <!--extension
             point="org.eclipse.e4.ui.css.swt.theme">
    	    <stylesheet
-                uri="aaron.css">  <!-- css/your_dark_extensions.css"> -->
+                uri="aaron.css">
             <themeid
                     refid="org.eclipse.e4.ui.css.theme.e4_dark">
             </themeid>
         </stylesheet>
-    </extension>
+    </extension-->
    
    <!--menuContribution
       allPopups="true"

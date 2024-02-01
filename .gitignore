@@ -4,9 +4,6 @@ libs/
 .DS_Store
 _site/
 .sass-cache/
-.classpath
-.project
-.settings/
 /bin/
 *.class
 hs_err_pid*

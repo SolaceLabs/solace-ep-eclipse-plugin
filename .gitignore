@@ -4,7 +4,7 @@ libs/
 .DS_Store
 _site/
 .sass-cache/
-*/bin/
+bin
 *.class
 hs_err_pid*
 _site
@@ -19,5 +19,5 @@ solace-ep-eclipse-plugin-site/plugins/*
 solace-ep-eclipse-plugin-site/features/*
 solace-ep-eclipse-plugin-site/content.jar
 solace-ep-eclipse-plugin-site/artifacts.jar
-//#solace-ep-eclipse-plugin-site/index.html
-//#solace-ep-eclipse-plugin-site/web/*
+solace-ep-eclipse-plugin-site/index.html
+solace-ep-eclipse-plugin-site/web/*

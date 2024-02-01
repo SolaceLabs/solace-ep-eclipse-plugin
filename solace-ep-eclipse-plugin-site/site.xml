@@ -3,7 +3,7 @@
    <description name="Solace Event Portal Plugin" url="https://solace.dev">
       This is a plugin by Aaron. Manually updated!!
    </description>
-   <feature url="features/com.solace.ep.eclipse_0.0.1.202401312154.jar" id="com.solace.ep.eclipse" version="0.0.1.202401312154">
+   <feature url="features/com.solace.ep.eclipse_0.0.1.202402010159.jar" id="com.solace.ep.eclipse" version="0.0.1.202402010159">
       <category name="EventDriven"/>
    </feature>
    <category-def name="EventDriven" label="Event Driven Applications"/>

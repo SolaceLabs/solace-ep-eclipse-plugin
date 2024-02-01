@@ -15,3 +15,10 @@ _site
 docs/_site
 .idea
 log/
+
+keystore.jks
+server.cert
+solace-ep-eclipse-plugin-site/plugins/*
+solace-ep-eclipse-plugin-site/features/*
+solace-ep-eclipse-plugin-site/content.jar
+solace-ep-eclipse-plugin-site/artifacts.jar

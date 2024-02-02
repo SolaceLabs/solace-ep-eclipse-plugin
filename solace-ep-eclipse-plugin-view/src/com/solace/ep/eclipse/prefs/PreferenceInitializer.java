@@ -23,7 +23,9 @@ public class PreferenceInitializer extends AbstractPreferenceInitializer {
 //				"Default value");
 //		store.setDefault("prefEpDOmain", "api.solace.com");
 		store.setDefault(PreferenceConstants.TOKEN.getToken(), "");
-		store.setDefault(PreferenceConstants.URL.getToken(), "api.solace.cloud");
+		store.setDefault(PreferenceConstants.WEB_URL.getToken(), "solace-sso.solace.cloud");
+		store.setDefault(PreferenceConstants.API_URL.getToken(), "api.solace.cloud");
+		store.setDefault(PreferenceConstants.TIME_FORMAT.getToken(), "relative");
 		store.setDefault(PreferenceConstants.COLOUR_SCHEME.getToken(), "dark");
 	}
 

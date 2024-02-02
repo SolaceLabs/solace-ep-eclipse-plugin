@@ -75,7 +75,7 @@ public class EventPortalView extends ViewPart {
 	 * The ID of the view as specified by the extension.
 	 */
 	public static final String ID = "com.solace.ep.eclipse.views.SampleView";
-	private static final TimeStringFormat TSF = TimeStringFormat.RELATIVE;
+//	private static final TimeStringFormat TSF = TimeStringFormat.RELATIVE;
 
 	// the resource manager for loading images
 	ResourceManager resManager = null;
@@ -131,7 +131,12 @@ public class EventPortalView extends ViewPart {
 		epw.loadStates();
 //			epw.loadEvents();
 //			epw.loadSchemas();
-		
+		TimeStringFormat TSF;
+		switch (Activator.getDefault().getPreferenceStore().getString(PreferenceConstants.TIME_FORMAT.getToken())) {
+		case "iso": TSF = TimeStringFormat.TIMESTAMP; break;
+		case "normal": TSF = TimeStringFormat.CASUAL; break;
+		default: TSF = TimeStringFormat.RELATIVE;
+		}
 		for (ApplicationDomain domain : epw.getDomains()) {
 			TreeNode.Builder builder = new TreeNode.Builder()
 					.withEpType(SupportedObjectType.DOMAIN)
@@ -618,7 +623,7 @@ public class EventPortalView extends ViewPart {
 			IStructuredSelection selection = viewer.getStructuredSelection();
 			if (!selection.isEmpty()) {
 				TreeNode node = (TreeNode)selection.getFirstElement();
-				String baseUrl = Activator.getDefault().getPreferenceStore().getString(PreferenceConstants.URL.getToken());
+				String baseUrl = Activator.getDefault().getPreferenceStore().getString(PreferenceConstants.WEB_URL.getToken());
 				a4.url = PortalLinksUtils.generateUrl(node.epObject, baseUrl);
 				mgr.add(a4);
 				if (node.iconType == Type.vEVENT) {

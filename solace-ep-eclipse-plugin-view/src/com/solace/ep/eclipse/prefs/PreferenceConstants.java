@@ -3,52 +3,36 @@ package com.solace.ep.eclipse.prefs;
 /**
  * Constant definitions for plug-in preferences
  */
-public enum PreferenceConstants implements CharSequence {
-
+public enum PreferenceConstants {
 	
-//	public static final String P_PATH = "pathPreference";
-//
-//	public static final String P_BOOLEAN = "booleanPreference";
-//
-//	public static final String P_CHOICE = "choicePreference";
-//
-//	public static final String P_STRING = "stringPreference";
-//
-//	public static final String P_TOKEN = "tokenPreference";
-
+	TOKEN("tokenPref", "&Event Portal token:"),
+	WEB_URL("urlPref", "&URL for web Portal:"),
+	API_URL("apiUrlPref", "&API base URL:"),
+	TIME_FORMAT("timeFormatPref", "&Time Format:"),
+	TIME_FORMAT_RELATIVE("relative", "Relative"),
+	TIME_FORMAT_ISO("iso", "ISO"),
+	TIME_FORMAT_NORMAL("normal", "Normal"),
+	COLOUR_SCHEME("colourPref", "Colour Scheme:"),
+	COLOUR_SCHEME_DARK("dark", "&Dark Mode"),
+	COLOUR_SCHEME_LIGHT("light", "&Light Mode"),
 	
-	TOKEN("tokenPref"),
-	URL("urlPref"),
-	COLOUR_SCHEME("colourPref"),
 	;
 
 	public static final String PAGE_ID = "eventPortal.preferences.PreferencePage";
 
 	private final String tokenName;
+	private final String description;
 	
-	private PreferenceConstants(String token) {
+	private PreferenceConstants(String token, String description) {
 		this.tokenName = token;
+		this.description = description;
 	}
 	
 	public String getToken() {
 		return tokenName;
 	}
-
-	@Override
-	public int length() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public char charAt(int index) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public CharSequence subSequence(int start, int end) {
-		// TODO Auto-generated method stub
-		return null;
+	
+	public String getDescription() {
+		return description;
 	}
 }

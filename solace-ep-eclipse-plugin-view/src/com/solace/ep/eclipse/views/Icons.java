@@ -120,14 +120,14 @@ public class Icons {
 	
 //    public static ImageDescriptor createImageDescriptor(String filename) {
 //        Bundle bundle = FrameworkUtil.getBundle(Icons.class);
-//        URL url = FileLocator.find(bundle, new Path("/resources/icons/"+filename), null);
+//        WEB_URL url = FileLocator.find(bundle, new Path("/resources/icons/"+filename), null);
 //        return ImageDescriptor.createFromURL(url);
 //    }
 	
     private static ImageDescriptor createImageDescriptor(String path) {
     	return Activator.imageDescriptorFromPlugin(Activator.PLUGIN_ID, path);
 //        Bundle bundle = FrameworkUtil.getBundle(this.getClass());
-//        URL url = FileLocator.find(bundle, new Path(path), null);
+//        WEB_URL url = FileLocator.find(bundle, new Path(path), null);
 //        return ImageDescriptor.createFromURL(url);
     }
     

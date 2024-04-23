@@ -7,7 +7,7 @@ class TreeNodeViewContentProvider implements ITreeContentProvider {
 
 	@Override
 	public Object[] getElements(Object parent) {
-		System.out.println("ViewContentProvider.getElements(obj) called");
+//		System.out.println("ViewContentProvider.getElements(obj) called");
 //		if (parent.equals(getViewSite())) {  // the root I guess?
 //			System.out.println(parent.toString());
 //			if (root == null) initialize();  // initialize
@@ -23,7 +23,7 @@ class TreeNodeViewContentProvider implements ITreeContentProvider {
 
 	@Override
 	public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
-		System.err.println("ViewContentProvider.inputChanged() called");
+		System.err.println("ViewContentProvider.inputChanged() called, old: "+oldInput+ ", new:"+newInput);
 	}
 	
 	@Override

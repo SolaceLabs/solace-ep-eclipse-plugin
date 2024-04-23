@@ -12,6 +12,9 @@ _site
 docs/_site
 .idea
 log/
+.classpath
+.project
+.settings/
 
 keystore.jks
 server.cert

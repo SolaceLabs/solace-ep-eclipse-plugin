@@ -16,16 +16,8 @@ class TreeNodeTypeLabelProvider extends ColumnLabelProvider /* implements IStyle
 	@Override
 	public Image getImage(Object obj) {
 		TreeNode tn = (TreeNode)obj;
-		return Icons.getInstance().getImage(tn.iconType);
-//		switch (tn.type) {
-//		case DOMAIN: return Icons.getInstance().getImage(Icons.Type.DOMAIN);
-//		case APP: return Icons.getInstance().getImage(Icons.Type.APP);
-//		case vAPP: return Icons.getInstance().getImage(Icons.Type.vAPP);
-//		case EVENT: return Icons.getInstance().getImage(Icons.Type.EVENT);
-//		case vAPP: return Icons.getInstance().getImage(Icons.Type.vAPP);
-//		default:
-//			return Icons.getInstance().getImage(Icons.Type.SCHEMA);
-//		}
+		if (tn.iconType == null) return null;
+		return Icons.getImage(tn.iconType);
 	}
 }
 

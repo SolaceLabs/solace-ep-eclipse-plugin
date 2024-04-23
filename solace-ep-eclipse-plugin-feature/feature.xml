@@ -2,29 +2,35 @@
 <feature
       id="com.solace.ep.eclipse"
       label="Solace PubSub+ Event Portal plugin"
-      version="0.0.1.qualifier"
+      version="0.0.2.qualifier"
       provider-name="Solace Inc.">
 
-   <description url="https://solace.dev">
-      This is a description written by Aaron! This plugin will allow users to connect to the Solace PubSub+ Event Portal and visualize data from there.
+   <description>
+      This plugin will allow users to connect to the Solace PubSub+
+Event Portal and view data from there.  If loaded in the Mulesoft Anypoint Studio, it will provide options for building starting skeleton Mule projects from AsyncAPI specs for versioned Solace Applications.
+
+It requires the creation of a Token, with appropriate read-only permissions.  This can be created in the Event Portal, under &quot;User &amp; Account&quot; in the bottom-left, Token Management.  It requires:
+ - all Read permissions under Event Portal 2.0 section
+ - all Read permissions under Event Portal section
+ - &apos;Get Users&apos; under Account Management section (optional)
+
 
 Come find us on Solace Community!  https://solace.community
    </description>
 
    <copyright>
       Copyright 2024 Solace Inc.
-
-   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+or implied.
+See the License for the specific language governing permissions
+and
+limitations under the License.
    </copyright>
 
    <license url="https://www.apache.org/licenses/LICENSE-2.0">
@@ -207,7 +213,7 @@ Come find us on Solace Community!  https://solace.community
    </license>
 
    <url>
-      <update label="Solace Temp Update Site" url="https://sg.solace.com/eclipse"/>
+      <update label="Solace Update Site" url="https://solace.dev/plugins"/>
    </url>
 
    <plugin

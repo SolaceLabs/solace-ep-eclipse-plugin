@@ -3,18 +3,27 @@ package com.solace.ep.eclipse.views;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.swt.graphics.Image;
 
+import com.fasterxml.jackson.annotation.JsonCreator.Mode;
 import com.solace.ep.eclipse.Activator;
+import com.solace.ep.eclipse.views.ColorUtils.ColorMode;
 
 public class Icons {
+	
+	private static final Logger logger = LogManager.getLogger(Icons.class);
 
 	enum Type {
 		DOMAIN,
 		APP,
 		vAPP,
+		vAPPnone,
+		vAPPboth,
+		vAPPpub,
+		vAPPsub,
 		EVENT,
 		vEVENT,
 		vEVENTboth,
@@ -22,12 +31,16 @@ public class Icons {
 		vEVENTsub,
 		SCHEMA,
 		vSCHEMA,
+		vSCHEMAnone,
+		vSCHEMAprim,
 		API,
 		vAPI,
 		APIproduct,
 		vAPIproduct,
 		
-		EXECUTE,
+		LOAD,
+//		LOADING,
+		REFRESH,
 		GEAR,
 		EXPAND,
 		COLLAPSE,
@@ -37,98 +50,124 @@ public class Icons {
 		VISIBLE,
 		
 		PORTAL,
+		LOGO,
+		WATCH,
 		BROWSER,
 		MULE,
 		SPRING,
+		ASYNC,
 		;
 	}
 
 	private boolean inited = false;
-	
 	private static Icons instance = new Icons();
 	
-	public static Icons getInstance() {
-		return instance;
-	}
+//	public static Icons getInstance() {
+//		return instance;
+//	}
+
+
 	
-	private Icons() {
-		// hide the constructor
-	}
-	
-	void init(ResourceManager mgr) {
-		System.out.println("Loading images...");
+	static void init(/* ResourceManager mgr */) {
+		System.out.println("Loading imageRegistry...");
+		
 //		this.mgr = mgr;
-		loadImages(mgr);
+		instance.loadImages();
 	}
 	
 //	private ResourceManager mgr = null;
-	private Map<Type, ImageDescriptor> imageDes = new HashMap<>();
-	private Map<Type, Image> images = new HashMap<>();
+	private Map<Type, ImageDescriptor> idsLight = new HashMap<>();
+	private Map<Type, ImageDescriptor> idsDark = new HashMap<>();
+//	private Map<Type, Image> imageRegistry = new HashMap<>();
 	
-	
-	private void loadImages(ResourceManager mgr) {
-		try {
-			imageDes.put(Type.DOMAIN, createImageDescriptor("/icons/ep/domain-large.png"));
-			imageDes.put(Type.APP, createImageDescriptor("/icons/ep/hex-large.png"));
-			imageDes.put(Type.vAPP, createImageDescriptor("/icons/ep/hex-small-pub.png"));
-			imageDes.put(Type.EVENT, createImageDescriptor("/icons/ep/event-large.png"));
-			imageDes.put(Type.vEVENT, createImageDescriptor("/icons/ep/event-small.png"));
-			imageDes.put(Type.vEVENTpub, createImageDescriptor("/icons/ep/event-small-pub.png"));
-			imageDes.put(Type.vEVENTsub, createImageDescriptor("/icons/ep/event-small-sub.png"));
-			imageDes.put(Type.vEVENTboth, createImageDescriptor("/icons/ep/event-small-both.png"));
-			imageDes.put(Type.SCHEMA, createImageDescriptor("/icons/ep/triangle-large.png"));
-			imageDes.put(Type.vSCHEMA, createImageDescriptor("/icons/ep/triangle-small.png"));
-			imageDes.put(Type.API, createImageDescriptor("/icons/ep/square-large.png"));
-	//		imageDes.put(Type.vAPI, createImageDescriptor("/icons/ep/suare-small.png"));
-			imageDes.put(Type.APIproduct, createImageDescriptor("/icons/ep/diamond-large.png"));
-	//		imageDes.put(Type.vAPIproduct, createImageDescriptor("/icons/ep/di-small.png"));
-	
-			imageDes.put(Type.EXPAND, createImageDescriptor("/icons/expandall.png"));
-			imageDes.put(Type.COLLAPSE, createImageDescriptor("/icons/collapseall.png"));
-			imageDes.put(Type.SORTname, createImageDescriptor("/icons/sorted.png"));
-			imageDes.put(Type.SORTtype, createImageDescriptor("/icons/sortByType.png"));
-			
-			imageDes.put(Type.EXECUTE, createImageDescriptor("/icons/execute.png"));
-			imageDes.put(Type.GEAR, createImageDescriptor("/icons/gearPlain.png"));
-			imageDes.put(Type.FILTER, createImageDescriptor("/icons/filter.png"));
-			imageDes.put(Type.VISIBLE, createImageDescriptor("/icons/toggleVisibility.png"));
-			
-			
-			imageDes.put(Type.PORTAL, createImageDescriptor("/icons/portal6.png"));
-			imageDes.put(Type.MULE, createImageDescriptor("/icons/MuleFlow-16x16.png"));
-			imageDes.put(Type.SPRING, createImageDescriptor("/icons/spring.png"));
-			imageDes.put(Type.BROWSER, createImageDescriptor("/icons/browser.png"));
+	private String path(String filename) {
+		return "/icons/" + filename;
+	}
 
-			for (Type key : imageDes.keySet()) {
-				images.put(key, mgr.create(imageDes.get(key)));
-			}
+	
+	private void loadImages() {
+		try {
+			add(Type.DOMAIN, "ep/domain-large");
+			add(Type.APP, "ep/hex-large");
+			add(Type.vAPP, "ep/hex-small");
+			add(Type.vAPPnone, "ep/apps-noevent");
+			add(Type.vAPPpub, "ep/hex-small-pub");
+			add(Type.vAPPsub, "ep/hex-small-sub");
+			add(Type.vAPPboth, "ep/hex-small-both");
+			add(Type.EVENT, "ep/event-large");
+			add(Type.vEVENT, "ep/event-small");
+			add(Type.vEVENTpub, "ep/event-small-pub");
+			add(Type.vEVENTsub, "ep/event-small-sub");
+			add(Type.vEVENTboth, "ep/event-small-both");
+			add(Type.SCHEMA, "ep/triangle-large");
+			add(Type.vSCHEMA, "ep/triangle-small");
+			add(Type.vSCHEMAnone, "ep/schema-none");
+			add(Type.vSCHEMAprim, "ep/schema-primitive");
+			add(Type.API, "ep/square-large");
+			add(Type.vAPI, "ep/square-small");
+			add(Type.APIproduct, "ep/diamond-large");
+			add(Type.vAPIproduct, "ep/diamond-small");
+	
+			add(Type.EXPAND, "expandall");
+			add(Type.COLLAPSE, "collapseall");
+			add(Type.SORTname, "sorted");
+			add(Type.SORTtype, "sortByType");
+			add(Type.LOAD, "execute");
+			add(Type.REFRESH, "refresh");
+			add(Type.GEAR, "gearPlain");
+			add(Type.FILTER, "filter");
+			add(Type.VISIBLE, "toggleVisibility");
+			
+//			add(Type.PORTAL, "portal6");
+			add(Type.PORTAL, "portalToolbar");
+			add(Type.WATCH, "watch");
+			add(Type.LOGO, "ep/EP_Logo_Green");
+			add(Type.MULE, "MuleFlow-16x16");
+			add(Type.SPRING, "spring");
+			add(Type.BROWSER, "browser");
+			add(Type.ASYNC, "asyncapi3");
+
 			inited = true;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 	
-	Image getImage(Type key) {
-		if (!inited) return null;
-		return images.get(key);
+	private void add(Type key, String filename) {
+		String lightPath = path(filename) + ".png";
+		ImageDescriptor id = buildImageDescriptor(lightPath);
+		if (id == null) {  // couldn't find any file
+			logger.error("Couldn't load " + filename);
+			return;
+		}
+		idsLight.put(key, id);
+		EventPortalView.register(key.name() + "_LIGHT", id);
+		String darkPath = path(filename) + "_dark.png";
+		ImageDescriptor iddark = buildImageDescriptor(darkPath);
+		if (iddark == null) {  // no dark version
+//			logger.debug("Can't find dark version for : " + key.name() + ", " + darkPath);
+			iddark = id;
+		}
+		idsDark.put(key, iddark);
+		EventPortalView.register(key.name() + "_DARK", iddark);
+	}
+
+	static Image getImage(Type key) {
+		if (!instance.inited) return null;
+		String imageKey = key.name() + "_" + ColorUtils.getMode();
+		return EventPortalView.getImage(imageKey);
+	}
+
+	static ImageDescriptor getImageDescriptor(Type key) {
+		if (!instance.inited) return null;
+		if (ColorUtils.getMode() == ColorMode.DARK) {
+			return instance.idsDark.get(key);
+		}
+		return instance.idsLight.get(key);
 	}
 	
-	ImageDescriptor getImageDescripor(Type key) {
-		if (!inited) return null;
-		return imageDes.get(key);
-	}
-	
-//    public static ImageDescriptor createImageDescriptor(String filename) {
-//        Bundle bundle = FrameworkUtil.getBundle(Icons.class);
-//        WEB_URL url = FileLocator.find(bundle, new Path("/resources/icons/"+filename), null);
-//        return ImageDescriptor.createFromURL(url);
-//    }
-	
-    private static ImageDescriptor createImageDescriptor(String path) {
+    static ImageDescriptor buildImageDescriptor(String path) {
     	return Activator.imageDescriptorFromPlugin(Activator.PLUGIN_ID, path);
-//        Bundle bundle = FrameworkUtil.getBundle(this.getClass());
-//        WEB_URL url = FileLocator.find(bundle, new Path(path), null);
-//        return ImageDescriptor.createFromURL(url);
     }
     
 }

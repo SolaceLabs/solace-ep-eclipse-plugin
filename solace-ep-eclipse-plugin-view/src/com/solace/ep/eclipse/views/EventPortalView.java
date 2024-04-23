@@ -1,281 +1,169 @@
 package com.solace.ep.eclipse.views;
 
-import java.io.File;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.awt.AWTError;
+import java.awt.HeadlessException;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.action.Action;
-import org.eclipse.jface.action.IMenuListener;
-import org.eclipse.jface.action.IMenuManager;
+import org.eclipse.jface.action.ControlContribution;
 import org.eclipse.jface.action.IToolBarManager;
-import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.preference.PreferenceDialog;
-import org.eclipse.jface.resource.JFaceResources;
-import org.eclipse.jface.resource.LocalResourceManager;
+import org.eclipse.jface.resource.ColorRegistry;
+import org.eclipse.jface.resource.FontRegistry;
+import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.jface.resource.ResourceManager;
-import org.eclipse.jface.viewers.ColumnLabelProvider;
-import org.eclipse.jface.viewers.DoubleClickEvent;
-import org.eclipse.jface.viewers.IDoubleClickListener;
-import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.TreeViewer;
-import org.eclipse.jface.viewers.TreeViewerColumn;
+import org.eclipse.jface.wizard.IWizard;
+import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
+import org.eclipse.swt.events.PaintEvent;
+import org.eclipse.swt.events.PaintListener;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.IWorkbench;
-import org.eclipse.ui.IWorkbenchActionConstants;
-import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.dialogs.PreferencesUtil;
-import org.eclipse.ui.part.DrillDownAdapter;
 import org.eclipse.ui.part.ViewPart;
+import org.eclipse.ui.wizards.IWizardDescriptor;
+import org.eclipse.ui.wizards.IWizardRegistry;
 
 import com.solace.ep.eclipse.Activator;
 import com.solace.ep.eclipse.prefs.PreferenceConstants;
 import com.solace.ep.eclipse.views.Icons.Type;
-import com.solace.ep.muleflow.eclipse.EclipseProjectGenerator;
+import com.solace.ep.eclipse.wizards.ImportAsyncAPIWizard;
+import com.solace.ep.eclipse.wizards.ImportAsyncAPIWizardHack;
 
-import community.solace.ep.client.model.Application;
-import community.solace.ep.client.model.Application.BrokerTypeEnum;
-import community.solace.ep.client.model.ApplicationDomain;
-import community.solace.ep.client.model.ApplicationVersion;
-import community.solace.ep.client.model.EventVersion;
 import community.solace.ep.wrapper.EventPortalWrapper;
-import community.solace.ep.wrapper.PortalLinksUtils;
-import community.solace.ep.wrapper.SupportedObjectType;
-import dev.solace.aaron.useful.TimeUtils;
-import dev.solace.aaron.useful.TimeUtils.TimeStringFormat;
-import dev.solace.aaron.useful.WordUtils;
 
 
 
 
 
-public class EventPortalView extends ViewPart {
+public class EventPortalView extends ViewPart implements RefreshListener {
 
 	/**
 	 * The ID of the view as specified by the extension.
 	 */
-	public static final String ID = "com.solace.ep.eclipse.views.SampleView";
+	public static final String ID = "com.solace.ep.eclipse.views.EventPortalView";
 //	private static final TimeStringFormat TSF = TimeStringFormat.RELATIVE;
 
-	// the resource manager for loading images
+	// the resource manager for loading imageRegistry
 	ResourceManager resManager = null;
+	List<SuperTabView> tabs = new ArrayList<SuperTabView>();
 	CTabFolder tabFolder = null;
 
 	@Inject IWorkbench workbench;
 	
-	private TreeViewer viewer;
-	private DrillDownAdapter drillDownAdapter;
 	private Action actionLoad;
 	private Action actionPrefs;
-	private Action doubleClickAction;
-	private Action actionBuildMuleProf;
+	private Action actionAsyncAPI;
+
+	Composite parent;
+	private Set<EpDataListener> loadListeners = new HashSet<>();
+	boolean runningInMule = false;
 	 
+		
 	
-	private static Set<String> modifySetsCalcIntersection(Set<String> pubs, Set<String> subs) {
-		Set<String> both = new HashSet<>(pubs); both.retainAll(subs);
-		pubs.removeAll(both);
-		subs.removeAll(both);
-		return both;
-	}
 	
-	private static String vName(String version, String name) {
-		return new StringBuilder().append('v').append(version).append(' ').append(name).toString();
-	}
-
-
-
-	private static TreeNode root;
-
-	private static void initialize() {
-		root = TreeNode.createRootNode();
-
-		
-		String token = Activator.getDefault().getPreferenceStore().getString(PreferenceConstants.TOKEN.getToken());
-		if (token == null || token.isEmpty()) {
-			root.addChild(new TreeNode.Builder().withId("abc").build("Please configure your", "", "", "", "", ""));
-			root.addChild(new TreeNode.Builder().withId("def").build("Event Portal access token", "", "", "", "", ""));
-			root.addChild(new TreeNode.Builder().withId("xyz").build("in preferences", "", "", "", "", ""));
-			return;
-		}
-		
-		EventPortalWrapper epw = EventPortalWrapper.INSTANCE;
-		// SE Demo
-//		epw.setToken("eyJhbGciOiJSUzI1NiIsImtpZCI6Im1hYXNfcHJvZF8yMDIwMDMyNiIsInR5cCI6IkpXVCJ9.eyJvcmciOiJzZWFsbGRlbW8iLCJvcmdUeXBlIjoiRU5URVJQUklTRSIsInN1YiI6IjY3dHI4dGt1NDEiLCJwZXJtaXNzaW9ucyI6IkFBQUFBSUFQQUFBQWZ6Z0E0QUVBQUFBQUFBQUFBQUFBQUlDeHpvY2hJQWpnTC8vL2c1WGZCZDREV01NRDQ0ZS9NUT09IiwiYXBpVG9rZW5JZCI6IjZicnQ5ZDRqazhvIiwiaXNzIjoiU29sYWNlIENvcnBvcmF0aW9uIiwiaWF0IjoxNjg5Nzk3NTkyfQ.buYOJRYDDBxtS0UspYX9mjxyN5W5WPrkPWBJk5__ejZG5UhMaNXuPKlDAnHBWXaoFFNQPkGg81CDA7I-xPTmOEVeA_PmzGKnAQjDKoTn5ySw_tEWrNAwRSMshk6V7iQCUyFSuSveBnOArG9hLaFFX2jZemHtFFWc_159_BTbt198LxRX8rPx5a29shyYKcwyYOciGrNSzD7hm4A21OltpB9dJk-01GjwECrKhqVcNzz_kHzkNZ1ltWrmW6FFVnfBpa4bTf12psi7j11HK50uWqydiW30mikgij782uXJBFF4DuBsQf-Pvh3Of-S4kHIszeX2V958Pg__4Z1uKG1Nyg");
-		epw.setToken(Activator.getDefault().getPreferenceStore().getString(PreferenceConstants.TOKEN.getToken()));
-		// CTO
-//			epw.setToken("eyJhbGciOiJSUzI1NiIsImtpZCI6Im1hYXNfcHJvZF8yMDIwMDMyNiIsInR5cCI6IkpXVCJ9.eyJvcmciOiJzb2xhY2VjdG8iLCJvcmdUeXBlIjoiRU5URVJQUklTRSIsInN1YiI6IjY3dHI4dGt1NDEiLCJwZXJtaXNzaW9ucyI6IkFBQUFBSUFQQUFBQWZ6Z0E0QUVBQUFBQUFBQUFBQUFBQUlDeHpvY2hJQWpnTC8vL2c1WGZCZDREV01NRDQ0ZS9NUT09IiwiYXBpVG9rZW5JZCI6IjBra21xMnc0ZTF6IiwiaXNzIjoiU29sYWNlIENvcnBvcmF0aW9uIiwiaWF0IjoxNjg4MzkzNTU1fQ.I9tr6VolbXeGNNNyW3ASVtg-sa5yFNKgivSfIDslpA-e-Xd45DYSy_mhmZz7vfyFge7QRJF4NGQFd6x4R55mheRLPh1OU7Rai4rHchy6MKwTX9tNpWbhZZbHaya0qWN86WWtLg7_26di79Gm01D7wPuMnjMJjQAduzasbuQBOlT-nS4APwAuE-ny7FeRc8AoVgIJYTqTF954WS56iU4nKqh2eTbvlPwLODFgiVTPF0g-RYat7qo5eYZypRgPtfO3c24bx6Ycuq-0-uZH6RL522ZJ-IcMufAKxfAYqPw0FCP6nubNn1EHdIe46YeC2q-z2Ptm1FCTNgs49-tz-nGjyw");
-		
-		epw.loadDomains();
-		epw.loadApplications();  // apps and versions
-		epw.loadEvents(false);   // only events
-		epw.loadStates();
-//			epw.loadEvents();
-//			epw.loadSchemas();
-		TimeStringFormat TSF;
-		switch (Activator.getDefault().getPreferenceStore().getString(PreferenceConstants.TIME_FORMAT.getToken())) {
-		case "iso": TSF = TimeStringFormat.TIMESTAMP; break;
-		case "normal": TSF = TimeStringFormat.CASUAL; break;
-		default: TSF = TimeStringFormat.RELATIVE;
-		}
-		for (ApplicationDomain domain : epw.getDomains()) {
-			TreeNode.Builder builder = new TreeNode.Builder()
-					.withEpType(SupportedObjectType.DOMAIN)
-					.withId(domain.getId())
-					.withEpObject(domain)
-					.withIconType(Type.DOMAIN);
-			String time = TimeUtils.formatTime(domain.getUpdatedTime(), TSF);
-			String details = WordUtils.pluralize("Application", domain.getStats().getApplicationCount());
-			TreeNode domNode = builder.build("Domain", domain.getName(), details, null, null, time);
-//			TreeNode domNode = new TreeNode(type, domain.getId(), domain, iconType, "Domain", domain.getName(), details, null, null, time);
-			root.addChild(domNode);
-			for (Application app : epw.getApplicationsForDomainId(domain.getId())) {
-				builder = new TreeNode.Builder()
-						.withEpType(SupportedObjectType.APPLICATION)
-						.withId(app.getId())
-						.withEpObject(app)
-						.withIconType(Type.APP);
-//				type = SupportedObjectType.APPLICATION;
-//				iconType = Type.APP;
-				time = TimeUtils.formatTime(app.getUpdatedTime(), TSF);
-				String brokerType = WordUtils.capitalFirst(app.getBrokerType().getValue());
-				details = String.format("%s App, %s",
-						brokerType,
-		                WordUtils.capitalFirst(app.getApplicationType()));
-				details += ", " + WordUtils.pluralize("Version", app.getNumberOfVersions());
-				TreeNode appNode = builder.build("App", app.getName(), details, null, null, time);
-//				TreeNode appNode =  new TreeNode(type, app.getId(), app, iconType, "App", app.getName(), details, null, null, time);
-				domNode.addChild(appNode);
-				for (ApplicationVersion appVer : epw.getApplicationVersionsForApplicationId(app.getId())) {
-					builder = new TreeNode.Builder()
-							.withEpType(SupportedObjectType.APPLICATION_VERSION)
-							.withId(appVer.getId())
-							.withEpObject(appVer)
-							.withIconType(Type.vAPP);
-
-//					Application app = EventPortalWrapper.INSTANCE.getApplication(appVer.getApplicationId());
-//					item.setImage(images.get("vApp"));
-					
-					Set<String> pubs = new HashSet<>(appVer.getDeclaredProducedEventVersionIds());
-					Set<String> subs = new HashSet<>(appVer.getDeclaredConsumedEventVersionIds());
-					Set<String> both = modifySetsCalcIntersection(pubs, subs);
-					
-					String name = vName(appVer.getVersion(), app.getName());
-					details = WordUtils.pluralize(brokerType + " Event", pubs.size() + subs.size() + both.size()) + " referenced";
-					String state = EventPortalWrapper.INSTANCE.getState(appVer.getStateId()).getName();
-					String topic = "";
-					String updated = TimeUtils.formatTime(appVer.getUpdatedTime(), TSF);
-
-					TreeNode appVerNode = builder.build("vApp", name, details, state, topic, updated, "View AsyncAPI");
-//					TreeNode appVerNode =  new TreeNode(type, appVer.getId(), appVer, iconType, "vApp", name, details, state, topic, updated, "View AsyncAPI");
-					appNode.addChild(appVerNode);
-				
-					for (String eventId : both) {
-						helperAddEventVersion(eventId, appVerNode, Dir.BOTH, brokerType);
-					}
-					for (String eventId : pubs) {
-						helperAddEventVersion(eventId, appVerNode, Dir.PUB, brokerType);
-					}
-					for (String eventId : subs) {
-						helperAddEventVersion(eventId, appVerNode, Dir.SUB, brokerType);
-					}
-				}
-			}
-		}
+	private static final Logger logger = LogManager.getLogger(EventPortalView.class);
+	static ImageRegistry imageRegistry = null;
+	static FontRegistry fonts = null;
+	static ColorRegistry colors = null;
+//
+//	public static void register(String key, Image image) {
+//		imageRegistry.put(key, image);
+//	}
+	
+	public static void register(String key, ImageDescriptor id) {
+		imageRegistry.put(key, id);
 	}
 	
-	public enum Dir {
-		PUB("Pub","Published","Pub→"),
-		SUB("Sub","Subscribed", "→Sub"),
-		BOTH("Pub/Sub", "Pub'ed & Sub'ed", "→Both→"),
-		;
-		
-		final String small;
-		final String big;
-		final String arrows;
-		
-		Dir(String s, String b, String a) {
-			this.small = s;
-			this.big = b;
-			this.arrows = a;
-		}
+	public static Image getImage(String key) {
+		return imageRegistry.get(key);
 	}
 	
-	static void helperAddEventVersion(String vEventId, TreeNode nodeParent, Dir pubSub, String brokerType) {
-		TreeNode.Builder builder = new TreeNode.Builder()
-				.withEpType(SupportedObjectType.EVENT_VERSION)
-				.withId(vEventId);
-		switch (pubSub) {
-			case PUB: builder.withIconType(Type.vEVENTpub); break;
-			case SUB: builder.withIconType(Type.vEVENTsub); break;
-			case BOTH: builder.withIconType(Type.vEVENTboth); break;
-			default: builder.withIconType(Type.vEVENT);
-		}
-		EventVersion eventVer = EventPortalWrapper.INSTANCE.getEventVersion(vEventId);
-		if (eventVer == null) {  // haven't loaded yet
-			TreeNode eventVerNode = builder.build("vEvent", pubSub.arrows + " ID: " + vEventId, pubSub.big + " " + brokerType + " Event", null, null, null, "View in Portal");
-//			TreeNode eventVerNode =  new TreeNode(SupportedObjectType.EVENT_VERSION, vEventId, eventVer, iconType, "vEvent", pubSub.arrows + " ID: " + vEventId, pubSub.big + " " + brokerType + " Event", null, null, null, "View in Portal");
-			nodeParent.addChild(eventVerNode);
-		} else {  // not implemented yet
-		}
+	public static void register(String key, FontData fd) {
+		fonts.put(key, new FontData[] {fd});
 	}
 	
-	class ChildLabelProvider extends ColumnLabelProvider /* implements IStyledLabelProvider */ {
-		
-		final int col;
-		
-		public ChildLabelProvider(int col) {
-			this.col = col;
-		}
-
-		@Override
-		public String getText(Object obj) {
-			TreeNode o = (TreeNode)obj;
-			if (col > o.content.length-1) return "-";
-			return o.content[col];
-		}
-		
-		@Override
-		public Image getImage(Object obj) {
-			return null;
-		}
+	public static void register(String key, RGB color) {
+		colors.put(key, color);
 	}
+	
 
-
-
+	
+	
 	@Override
 	public void createPartControl(Composite parent) {
+		logger.info("STARTING createPartControl() *******************");
+		this.parent = parent;
+//		ColorUtils.init(PlatformUI.getWorkbench().getThemeManager());
+		ColorUtils.init();
+
+		imageRegistry = new ImageRegistry(parent.getDisplay());
+		fonts = new FontRegistry(parent.getDisplay());
+		colors = new ColorRegistry(parent.getDisplay());
 		
-		// create the manager and bind to a widget
-		resManager = new LocalResourceManager(JFaceResources.getResources(), parent);
-//		System.out.println("Resource Manager is: " + resManager);
-		Icons.getInstance().init(resManager);
+		// initialize some fonts
+		FontData defaultFontData = fonts.defaultFont().getFontData()[0];
+		FontData fontData = new FontData( "Consolas", defaultFontData.getHeight(), SWT.BOLD );
+		fonts.put("topic", new FontData[] {fontData});
 		
+//		FontDescriptor des = fonts.defaultFontDescriptor();
+		fontData = new FontData(defaultFontData.getName(), (int)(defaultFontData.getHeight()), SWT.BOLD);
+		fonts.put("bold", new FontData[] {fontData});
+		fontData = new FontData(defaultFontData.getName(), (int)Math.round(defaultFontData.getHeight() * 0.75), defaultFontData.getStyle());
+		fonts.put("small", new FontData[] {fontData});
+		fontData = new FontData(defaultFontData.getName(), (int)Math.round(defaultFontData.getHeight() * 1.15), defaultFontData.getStyle());
+		fonts.put("big", new FontData[] {fontData});
+
+		Icons.init();
+		AnimatedIcons.init();
 		
-		
+        try {
+			IWizardRegistry wizards = PlatformUI.getWorkbench().getImportWizardRegistry();
+			IWizardDescriptor wizard = wizards.findWizard("org.mule.tooling.ui.muleZipProjectImportWizard");
+			if (wizard != null) {
+				runningInMule = true;
+			}
+        } finally {
+        	
+        }
 		
 		Composite comp = new Composite(parent, SWT.BORDER);
 		GridLayout gl = new GridLayout();
-//		gl.marginLeft = 0;
 		gl.marginHeight = 0;
 		gl.marginWidth = 0;
 		gl.horizontalSpacing = 0;
@@ -296,553 +184,396 @@ public class EventPortalView extends ViewPart {
 		gl.marginRight = 1;
 		leftToolbar.setLayout(gl);
 		
-//		Label label = new Label(leftToolbar, SWT.NONE);
-//		label.setText("🔃");
-//		System.out.println("***** I am about to set an image");
-//		System.out.println("Are we in dark mode? " + Display.isSystemDarkTheme());
-//		System.out.println(SWT.COLOR_WIDGET_BACKGROUND);
-//		Color bg = parent.getDisplay().getSystemColor(SWT.COLOR_WIDGET_BACKGROUND);
-//		System.out.println(bg);
-//		bg = parent.getDisplay().getSystemColor(SWT.COLOR_LIST_BACKGROUND);
-//		System.out.println(bg);
-		
-//        gd = new GridData(GridData.VERTICAL_ALIGN_BEGINNING);
-		
 		leftToolbar.setBackgroundMode(SWT.INHERIT_NONE);  // no borders on buttons??
 		
 		Button b;
-		
-/*		b= new Button(leftToolbar, SWT.PUSH);
-		b.setImage(new Image(parent.getDisplay(), getClass().getResourceAsStream("/icons/gearPlain.png")));
-		gd = new GridData();
-		b.setLayoutData(gd);
-		
-		if ("a".equals("b")) {  // 
-		Label l = new Label(leftToolbar, SWT.NONE);
-		l.setImage(new Image(parent.getDisplay(), getClass().getResourceAsStream("/icons/gearPlain.png")));
-		gd = new GridData();
-		gd.horizontalAlignment = SWT.CENTER;
-		l.setLayoutData(gd);
-		l.addMouseListener(new MouseListener() {
-			
-			@Override
-			public void mouseUp(MouseEvent e) {
-				System.out.println("MOUSE UP ON GEAR LABEL");
-			}
-			
-			@Override
-			public void mouseDown(MouseEvent e) {
-				System.out.println("MOUSE DOWN ON GEAR LABEL");
-			}
-			
-			@Override
-			public void mouseDoubleClick(MouseEvent e) {
-				System.out.println("MOUSE DBLECLICK ON GEAR LABEL");
-			}
-		});
-		}
-		
-		b= new Button(leftToolbar, SWT.NONE);
-		b.setImage(new Image(parent.getDisplay(), getClass().getResourceAsStream("/icons/execute.png")));
-		gd = new GridData();
-		gd.verticalIndent = 10;
-		b.setLayoutData(gd);
-		b.setToolTipText("Load Event Portal Data");
-		b.addMouseListener(new MouseListener() {
-			
-			@Override
-			public void mouseUp(MouseEvent e) {
-			}
-			
-			@Override
-			public void mouseDown(MouseEvent e) {
-				// let's load some event portal data..?
-				
-
-			}
-			
-			@Override
-			public void mouseDoubleClick(MouseEvent e) {
-			}
-		});
-*/
-		
-		String token = Activator.getDefault().getPreferenceStore().getString(PreferenceConstants.TOKEN.getToken());
-		System.out.printf("TOKEN IS: '%s'%n", token);
-
-
 		b = new Button(leftToolbar, SWT.FLAT);
-		b.setImage(Icons.getInstance().getImage(Type.EXPAND));
+		b.setImage(Icons.getImage(Type.EXPAND));
+//		b.setEnabled(false);
 		gd = new GridData();
 		gd.verticalIndent = 2;
 		b.setLayoutData(gd);
 		b.setToolTipText("Expand one level");
+		b.addSelectionListener(new SelectionListener() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				int tabIndex = tabFolder.getSelectionIndex();
+				SuperTabView tab = tabs.get(tabIndex);
+//				CTabItem item = tabFolder.getItem(tab);
+//				Control c = item.getControl();
+//				if (tab == 0) {
+//					System.err.println(c.toString());
+//				}
+				tab.expandOne();
+//				System.err.println("Expand by one on tab " + tabFolder.getSelectionIndex());
+			}
+			
+			@Override public void widgetDefaultSelected(SelectionEvent e) {}
+		});
 
-		b = new Button(leftToolbar, SWT.SMOOTH);
-		b.setImage(Icons.getInstance().getImage(Type.COLLAPSE));
+		b = new Button(leftToolbar, SWT.FLAT);
+		b.setImage(Icons.getImage(Type.COLLAPSE));
+//		b.setEnabled(false);
 		gd = new GridData();
 		b.setLayoutData(gd);
-		b.setToolTipText("Collapse one level");
+		b.setToolTipText("Collapse all");
+		b.addSelectionListener(new SelectionListener() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				int tabIndex = tabFolder.getSelectionIndex();
+				SuperTabView tab = tabs.get(tabIndex);
+//				tab.co
+				tab.collapseAll();
+//				System.err.println("Collapse by one on tab " + tabFolder.getSelectionIndex());
+			}
+			
+			@Override public void widgetDefaultSelected(SelectionEvent e) {}
+		});
 		
-		b = new Button(leftToolbar, SWT.FLAT);  // sort by alpha
-		b.setImage(Icons.getInstance().getImage(Type.SORTtype));
+		b = new Button(leftToolbar, SWT.FLAT);  // sort by domain
+		b.setImage(Icons.getImage(Type.SORTtype));
+		b.setEnabled(false);
 		b.setSelection(true);
 		gd = new GridData();
 		gd.verticalIndent = 10;
 		b.setLayoutData(gd);
+		b.addSelectionListener(new SelectionListener() {
+			
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				System.err.println("Sort by domain on tab " + tabFolder.getSelectionIndex());
+			}
+			
+			@Override public void widgetDefaultSelected(SelectionEvent e) {}
+		});
 		
-		b = new Button(leftToolbar, SWT.FLAT);  // sort by domain
-		b.setImage(Icons.getInstance().getImage(Type.SORTname));
+		b = new Button(leftToolbar, SWT.FLAT);  // sort by name
+		b.setImage(Icons.getImage(Type.SORTname));
+		b.setEnabled(false);
 		gd = new GridData();
 		b.setLayoutData(gd);
+		b.addSelectionListener(new SelectionListener() {
+			
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				logger.info("Sort by name on tab " + tabFolder.getSelectionIndex());
+				tabs.get(tabFolder.getSelectionIndex()).sortByAlpha();
+			}
+			
+			@Override public void widgetDefaultSelected(SelectionEvent e) {}
+		});
 
-		b = new Button(leftToolbar, SWT.PUSH);
-		b.setImage(Icons.getInstance().getImage(Type.FILTER));
+		b = new Button(leftToolbar, SWT.FLAT);
+		b.setImage(Icons.getImage(Type.FILTER));
 		b.setEnabled(false);
 		gd = new GridData();
 		gd.verticalIndent = 10;
 		b.setLayoutData(gd);
+		b.addSelectionListener(new SelectionListener() {
+			
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				// filter
+			}
+			
+			@Override public void widgetDefaultSelected(SelectionEvent e) {}
+		});
 		
-		b = new Button(leftToolbar, SWT.PUSH);
-		b.setImage(Icons.getInstance().getImage(Type.VISIBLE));
+		b = new Button(leftToolbar, SWT.FLAT);
+		b.setImage(Icons.getImage(Type.VISIBLE));
 		b.setEnabled(false);
 		gd = new GridData();
 		gd.verticalIndent = 10;
 		b.setLayoutData(gd);
-		
-//		ProgressBar pb = new ProgressBar(leftToolbar,SWT.HORIZONTAL);
-//        pb.setMinimum(0);
-//        pb.setMaximum(10);
-////        pb.setSize(30, 16);
-//        pb.setBounds(0,0,30,16);
-//		gd = new GridData();
-//		gd.verticalIndent = 10;
-//		pb.setLayoutData(gd);
-
-		
-		
-//		gd = new GridData();
-//		gd.horizontalIndent = 5;
-//		gd.verticalIndent = 5;
-//		gd.grabExcessVerticalSpace = false;
-//		label.setLayoutData(gd);
-//		label.setLayoutData(new GridData(GridData.);
 		
 		tabFolder = new CTabFolder (comp, SWT.NONE);
-//		tabFolder.set
 		gd = new GridData();
 		gd.horizontalAlignment = SWT.FILL;
 		gd.verticalAlignment = SWT.FILL;
 		gd.grabExcessHorizontalSpace = true;
 		gd.grabExcessVerticalSpace = true;
 		tabFolder.setLayoutData(gd);
-//		tabFolder.
-//		Rectangle clientArea = shell.getClientArea ();
-//		tabFolder.setLocation (clientArea.x, clientArea.y);
 
-		final Type[] tabIcons = { Type.APP, Type.EVENT, Type.SCHEMA, Type.API, Type.APIproduct };
+		final Type[] tabIcons = { Type.vAPP, Type.EVENT, Type.SCHEMA, Type.API, Type.APIproduct };
 		final String[] tabTitles =  {
 				"Applications", "Events", "Schemas", "Event APIs", "Event API Products" };
-//		final String[] tabIcons = new String[] {
-//				"hex-large.png", "event-large.png", "triangle-large.png", "square-large.png", "diamond-large.png" };
 
 		for (int i=0; i<tabTitles.length; i++) {
 			
 			final String title = tabTitles[i];
 			CTabItem tabbedItem = new CTabItem (tabFolder, SWT.NONE);
-//			gl = new GridLayout();
-			
-//			item.setImage(new Image(tabFolder.getDisplay(), getClass().getResourceAsStream("/icons/" + tabIcons[i])));
-			tabbedItem.setImage(Icons.getInstance().getImage(tabIcons[i]));
+			tabbedItem.setImage(Icons.getImage(tabIcons[i]));
 			tabbedItem.setText(title);
-			try {
-				if (i == 0) {
-					/*
-					if (token == null || token.isEmpty()) {
-						Label l = new Label(tabFolder, SWT.NONE);
-//						Composite c = new Composite(tabFolder, SWT.NONE);
-//						gl = new GridLayout();
-//						gl.
-//						c.setLayout(gl);
-						l.setText("Please configure your Event Portal access token in preferences");
-						GridData gd2 = new GridData();
-						gd2.horizontalAlignment = SWT.CENTER;
-						gd2.verticalAlignment = SWT.CENTER;
-						l.setLayoutData(gd2);
-						tabbedItem.setControl(l);
-						
-						
-						
-						continue;
-					}
-					*/
-					
-					
-//					AppsTab tab = new AppsTab();
-//					tab.buildAppsTree(tabFolder);
-//					item.setControl(tab.viewer.getControl());
-//					viewer = tab.viewer;
-//					item.setControl(tab.viewer.getControl());
-					
-//					AaTree tree = new AaTree(tabFolder, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);
-//					item.setControl(tree.getTree());
-					
-					viewer = new TreeViewer(tabFolder, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.FULL_SELECTION);
-					drillDownAdapter = new DrillDownAdapter(viewer);
-					
-					viewer.setContentProvider(new TreeNodeViewContentProvider());
-					viewer.getTree().setHeaderVisible(true);
-					viewer.getTree().setLinesVisible(true);
-//					viewer.setLabelProvider(new RootLevelLabelProvider());
-					
-//			        GridLayoutFactory.fillDefaults().generateLayout(parent);
-
-			        TreeViewerColumn viewerColumn = new TreeViewerColumn(viewer, SWT.NONE);
-			        viewerColumn.getColumn().setWidth(150);
-			        viewerColumn.getColumn().setText("Type");
-			        viewerColumn.setLabelProvider(new TreeNodeTypeLabelProvider());
-//			        viewerColumn.setLabelProvider(new ViewLabelProvider());
-			//
-			        int col = 1;
-			        viewerColumn = new TreeViewerColumn(viewer, SWT.NONE);
-			        viewerColumn.getColumn().setWidth(200);
-			        viewerColumn.getColumn().setText("Name");
-			        viewerColumn.setLabelProvider(new ChildLabelProvider(col++));
-			        
-			        viewerColumn = new TreeViewerColumn(viewer, SWT.NONE);
-			        viewerColumn.getColumn().setWidth(200);
-			        viewerColumn.getColumn().setText("Details");
-			        viewerColumn.setLabelProvider(new ChildLabelProvider(col++));
-
-			        viewerColumn = new TreeViewerColumn(viewer, SWT.NONE);
-			        viewerColumn.getColumn().setWidth(75);
-			        viewerColumn.getColumn().setText("State");
-			        viewerColumn.setLabelProvider(new TreeNodeStateProvider());
-			        col++;
-			        
-			        viewerColumn = new TreeViewerColumn(viewer, SWT.NONE);
-			        viewerColumn.getColumn().setWidth(250);
-			        viewerColumn.getColumn().setText("Topic");
-			        viewerColumn.setLabelProvider(new TreeNodeTopicProvider(viewer.getTree().getFont(), parent.getDisplay()));
-			        col++;
-			        
-			        viewerColumn = new TreeViewerColumn(viewer, SWT.NONE);
-			        viewerColumn.getColumn().setWidth(150);
-			        viewerColumn.getColumn().setText("Last Updated");
-			        viewerColumn.setLabelProvider(new ChildLabelProvider(col++));
-			        
-//			        viewerColumn = new TreeViewerColumn(viewer, SWT.NONE);
-//			        viewerColumn.getColumn().setWidth(100);
-//			        viewerColumn.getColumn().setText("Action");
-//			        viewerColumn.setLabelProvider(new ChildLabelProvider(col++));
-
-					tabbedItem.setControl(viewer.getControl());
-//					tabbedItem.setControl(viewer.getTree());
-
-			        initialize();
-			        viewer.setInput(root);  // I guess this initializes the tree?
-			        viewer.expandToLevel(2);
-//					viewer.setInput(getViewSite());  // I guess this initializes the tree?
-
-					
-					
-					
-					
-					
-				} else {
-					Label l = new Label(tabFolder, SWT.NONE);
-//					Composite c = new Composite(tabFolder, SWT.NONE);
-//					gl = new GridLayout();
-//					gl.
-//					c.setLayout(gl);
-					l.setText("Not implemented yet");
-					GridData gd2 = new GridData();
-					gd2.horizontalAlignment = SWT.CENTER;
-					gd2.verticalAlignment = SWT.CENTER;
-					l.setLayoutData(gd2);
-					tabbedItem.setControl(l);
-				}
-				
-	/*			Button button = new Button (tabFolder, SWT.PUSH);
-				button.setText ("Page " + title);
-				button.addSelectionListener(new SelectionListener() {
-					
-					@Override
-					public void widgetSelected(SelectionEvent arg0) {
-						System.out.println("### button "+title+" selected..!");
-					}
-					
-					@Override
-					public void widgetDefaultSelected(SelectionEvent arg0) {
-						System.out.println("### default button "+title+" default selected..!");
-					}
-				});
-				item.setControl (button);
-	*/
-			} catch (RuntimeException e) {
-				e.printStackTrace();
-				Label l = new Label(tabFolder, SWT.NONE);
-				l.setText("Runtime exception encountered: " + e.toString());
-				tabbedItem.setControl(l);
+			if (i == 0) {
+				AppsTab tab = new AppsTab(this, tabFolder, i, this);
+				tabs.add(tab);
+				loadListeners.add(tab);
+				tabbedItem.setControl(tab.getControl());
+			} else if (i == 1) {
+				EventsTab tab = new EventsTab(this, tabFolder, i, this);
+				tabs.add(tab);
+				loadListeners.add(tab);
+				tabbedItem.setControl(tab.getControl());
+			} else if (i == 2) {
+				SchemasTab tab = new SchemasTab(this, tabFolder, i, this);
+				tabs.add(tab);
+				loadListeners.add(tab);
+				tabbedItem.setControl(tab.getControl());
+			} else if (i == 3) {
+				EventAPIsTab tab = new EventAPIsTab(this, tabFolder, i, this);
+				tabs.add(tab);
+				loadListeners.add(tab);
+				tabbedItem.setControl(tab.getControl());
+			} else {
+				UnusedTab tab = new UnusedTab(this, tabFolder, i, this);
+				loadListeners.add(tab);
+				tabbedItem.setControl(tab.getControl());
+				tabs.add(tab);
 			}
 		}
 		tabFolder.pack ();
-//		tabFolder.showItem(first);
-		tabFolder.setSelection(0);
-//		tabFolder.setVisible(true);
-//		tabFolder.setEnabled(true);
-		
-		
-		
-		
-		
-		
-		
-		class LinkAction extends Action {
-			String url;
-			LinkAction(String text) {
-				super(text);
-			}
+		tabFolder.addSelectionListener(new SelectionListener() {
 			@Override
-			public void run() {
-				try {
-					System.out.println("### attempting to open: " + url);
-					PlatformUI.getWorkbench().getBrowserSupport().getExternalBrowser().openURL(new URL(url));
-				} catch (PartInitException | MalformedURLException e ) {
-					e.printStackTrace();
-				}
+			public void widgetSelected(SelectionEvent e) {
+				System.out.println("WIDget selected " + e.toString());
 			}
-		}
-		final LinkAction a4 = new LinkAction("View in Event Portal 🡵");
-		a4.setImageDescriptor(Icons.getInstance().getImageDescripor(Icons.Type.PORTAL));
-
-		final MenuManager mgr = new MenuManager();
-		mgr.setRemoveAllWhenShown(true);
-		
-		mgr.addMenuListener(manager -> {
-			IStructuredSelection selection = viewer.getStructuredSelection();
-			if (!selection.isEmpty()) {
-				TreeNode node = (TreeNode)selection.getFirstElement();
-				String baseUrl = Activator.getDefault().getPreferenceStore().getString(PreferenceConstants.WEB_URL.getToken());
-				a4.url = PortalLinksUtils.generateUrl(node.epObject, baseUrl);
-				mgr.add(a4);
-				if (node.iconType == Type.vEVENT) {
-					a4.setEnabled(false);  // disabled for now since we don't have the actual object, no event ID
-				}
-				
-				if (node.iconType == Type.vAPP) {
-					ApplicationVersion appVer = (ApplicationVersion)node.epObject;
-					Application app = (Application)node.getParent().epObject;
-					ApplicationDomain domain = (ApplicationDomain)node.getParent().getParent().epObject;
-					final Action a2 = new Action("") {
-						public void run() {
-							String asyncApi = EventPortalWrapper.INSTANCE.getAsyncApiForAppVerId(appVer.getId(), true);
-							System.out.println("AsyncAPI spec is: ");
-							System.out.println(asyncApi);
-							
-						    final String
-//				            groupId = "com.test.ep",
-//				            artifactId = "sample-mule-project",
-//				            version = "0.0.1";
-						    groupId = helperMakePackageName("com." + domain.getName()),
-				            artifactId = helperStripNonChars(app.getName()),
-				            version = appVer.getVersion();
-						    
-//						    String xmlString = "";
-//						    try {
-//						    	xmlString = MuleFlowGenerator.getMuleDocXmlFromAsyncApiString(asyncApi);
-//						    	System.out.println("The XML String is: " + xmlString);
-//						    } catch (Exception e) {
-//						    	System.err.println("MuleFlowGenerator.getMuleDocXmlFromAsyncApiString() failed");
-//						    	e.printStackTrace();
-//						    	return;
-//						    }
-					        String generatedArchive = "NADA";
-					        EclipseProjectGenerator epg = new EclipseProjectGenerator();
-					        try {
-//					            generatedArchive = epg.createMuleProject(groupId, artifactId, version, xmlString);
-//					        	String saveLocation = System.getProperty("user.home") + System.getProperty(baseUrl)
-					        	String filename = artifactId + "-" + version + ".jar";
-					        	File saveFile = new File(System.getProperty("user.home"), filename);
-					        	generatedArchive = saveFile.getAbsolutePath();
-					            epg.generateEclipseArchiveForMuleFlowFromAsyncApi(groupId, artifactId, version, asyncApi, saveFile.getAbsolutePath());
-					        } catch (Exception e) {
-						    	System.err.println("EclipseProjectGenerator.createMuleProject() failed");
-						    	e.printStackTrace();
-					            return;
-					        }
-
-					        // If we're here, we succeeded
-					        Path generatedArchivePath = Paths.get(generatedArchive);						    
-						    System.out.println("### DONE!  " + generatedArchivePath.toString());
-							showMessage("Mule project built! " + groupId + "." + artifactId +"\nJAR saved at: " + generatedArchivePath.toString());
-						}
-					};
-					a2.setText("Build New Mule Flow Project");
-					a2.setImageDescriptor(Icons.getInstance().getImageDescripor(Icons.Type.MULE));
-					mgr.add(a2);
-					// this Mule build app thing is only available for Solace so far
-//					Application app = (Application)node.getParent().epObject;
-					if (app.getBrokerType() != BrokerTypeEnum.SOLACE) {
-						a2.setEnabled(false);
-					} else {
-						
-					}
-					Action aSpring = new Action("Build New Spring Cloud Stream Project") {
-					};
-					aSpring.setImageDescriptor(Icons.getInstance().getImageDescripor(Icons.Type.SPRING));
-					aSpring.setEnabled(false);
-					mgr.add(aSpring);
-				}
-/*				
-				mgr.add(new Action("Check for mule wizard") {
-					public void run() {
-						StringBuilder sb = new StringBuilder();
-						try {
-	//						showMessage(node.id);
-							
-	//						org.eclipse.ui.wizards.datatransfer.ImportOperation asdf
-	//						ImportOperation.
-	//						IWorkspace sdf = org.eclipse.core.resources.ResourcesPlugin.getWorkspace();
-	//						System.out.println(sdf);
-	//						sdf.getRoot().g
-	//						IProjectDescription proj = sdf.newProjectDescription("test");
-	//						proj.
-	//						ResourcesPlugin sdf2 = org.eclipse.core.resources.ResourcesPlugin.getPlugin();
-	//						System.out.println(sdf2);
-	//						sdf2.
-							IWizardRegistry wizards = PlatformUI.getWorkbench().getImportWizardRegistry();
-							IWizardDescriptor wizard = wizards.findWizard("org.mule.tooling.ui.muleZipProjectImportWizard");
-							if (wizard != null) {
-								sb.append("ID: ").append(wizard.getId());
-								sb.append("\nDesc: ").append(wizard.getDescription());
-								sb.append("\nhelpHref: ").append(wizard.getHelpHref());
-								sb.append("\nlabel: ").append(wizard.getLabel());
-								sb.append("\ntags: ").append(Arrays.toString(wizard.getTags()));
-								sb.append("\nhasPages: ").append(wizard.hasPages());
-								sb.append("\ntoString: ").append(wizard.toString());
-								showMessage(sb.toString());
-								
-								IWizard wiz = wizard.createWizard();
-								WizardDialog wd = new WizardDialog(Display.getCurrent().getActiveShell(), wiz);
-	//							wd.
-								wd.setTitle(wiz.getWindowTitle());
-								wd.open();
-								
-								
-							} else {
-								showMessage("Couldn't find any wizard like that");
-							}
-						}
-						catch (Throwable e) {
-							sb.append("\nException: " + e.toString() + "\n");
-							showMessage(sb.toString());
-						}
-					}
-				});
-*/				
-				mgr.add(new Separator());
-				drillDownAdapter.addNavigationActions(mgr);
-				mgr.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
+			
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+				System.out.println("WIDget default selected " + e.toString());
 			}
 		});
-		viewer.getControl().setMenu(mgr.createContextMenu(viewer.getControl()));		
+		
+//		tabFolder.addPaintListener(new PaintListener() {
+//			@Override
+//			public void paintControl(PaintEvent e) {
+//				System.out.println("CTabFolder Paint event fired " + e.toString());
+//			}
+//		});
+
+		tabFolder.setSelection(0);
 		
 		
 		
 		
+		
+		
+		
+		// test code   /////////////////////////////////////
+		/*
+		ITheme theme = PlatformUI.getWorkbench().getThemeManager().getCurrentTheme();
+//		PlatformUI.getWorkbench().getDecoratorManager().
+//		SWT.COLOR_FO
+		
+		Set<String> tableCols = new HashSet<String>(Arrays.asList(new String[] {
+				"org.eclipse.ui.workbench.FORM_HEADING_INFO_COLOR",
+				"org.eclipse.ui.workbench.ACTIVE_TAB_BG_END",
+				"org.eclipse.ui.workbench.ACTIVE_NOFOCUS_TAB_BG_END",
+				"org.eclipse.egit.ui.IgnoredResourceBackgroundColor",
+				"org.eclipse.egit.ui.UncommittedChangeBackgroundColor",
+				"org.eclipse.ui.workbench.ACTIVE_NOFOCUS_TAB_BG_START",
+				"org.eclipse.ui.workbench.ACTIVE_TAB_BG_START"}));
+		
+		logger.info(theme.getClass().getName());
+		logger.info(theme.getId());
+		logger.info(theme.keySet());
+		logger.info("Color manager: " + theme.getColorRegistry().getClass().getName());
+		logger.info("Color manager: " + theme.getColorRegistry().toString());
+		
+		for (String key : theme.getColorRegistry().getKeySet()) {
+			if (key.toLowerCase().contains("fore")
+					|| key.toLowerCase().contains("defau")
+					|| key.toLowerCase().contains("text")) {
+//				logger.info(key + ": " + theme.getColorRegistry().get(key).getRGB());
+			}
+			RGB col = theme.getColorRegistry().get(key).getRGB();
+			String c = col.toString();
+			if (c.matches(".*17., 17.*") || c.matches(".*16., 16.*")) {
+				logger.info(key + " ******************* : " + theme.getColorRegistry().get(key).getRGB());
+			}
+			if (c.matches(".*4., 4., 4.*")) {
+				logger.info(key + " *#################* : " + theme.getColorRegistry().get(key).getRGB());
+			}
+//			if (c.matches(".*0, 0, 0.*")) {
+//				logger.info(key + " *%%%%%%%%%%%%%%%%* : " + theme.getColorRegistry().get(key).getRGB());
+//			}
+			if (tableCols.contains(key)) {
+				logger.info(key + " @@@@@@@@@@@@@@ : " + theme.getColorRegistry().get(key).getRGB());
+			}
+		}
+		Color c = Display.getDefault().getSystemColor(SWT.COLOR_LIST_FOREGROUND);
+		logger.info("COLOR_LIST_FOREGROUND " + c.getRGB());
+		c = Display.getDefault().getSystemColor(SWT.COLOR_INFO_FOREGROUND);
+		logger.info("COLOR_INFO_FOREGROUND " + c.getRGB());
+		c = Display.getDefault().getSystemColor(SWT.COLOR_WIDGET_FOREGROUND);
+		logger.info("COLOR_WIDGET_FOREGROUND " + c.getRGB());
+		*/
 		
 		
         
         
         
-		// Create the help context id for the viewer's control
-		workbench.getHelpSystem().setHelp(viewer.getControl(), "HelloWorld2.viewer");
-		getSite().setSelectionProvider(viewer);
-		makeActions();
+		// Create the help context id for the treeViewer's control
+//		workbench.getHelpSystem().setHelp(treeViewer.getControl(), "HelloWorld2.viewer");
+		workbench.getHelpSystem().setHelp(tabFolder, "HelloWorld2.viewer");
+//		getSite().setSelectionProvider(treeViewer);
+		makeToolbarActions();
 //		hookContextMenu();
 //		hookDoubleClickAction();
 		contributeToActionBars();
 	}
 
-	@SuppressWarnings("unused")
-	private void hookContextMenu() {
-		MenuManager menuMgr = new MenuManager("#PopupMenu");
-		menuMgr.setRemoveAllWhenShown(true);
-		menuMgr.addMenuListener(new IMenuListener() {
-			public void menuAboutToShow(IMenuManager manager) {
-				EventPortalView.this.fillContextMenu(manager);
-			}
-		});
-		Menu menu = menuMgr.createContextMenu(viewer.getControl());
-		viewer.getControl().setMenu(menu);
-		getSite().registerContextMenu(menuMgr, viewer);
-	}
+//	@Override
+//	public void dispose() {
+////		Icons.dispose();
+////		AnimatedIcons.dispose();
+//		imageRegistry.dispose();
+//		super.dispose();
+//	}
 
+	
 	private void contributeToActionBars() {
 		IActionBars bars = getViewSite().getActionBars();
 //		fillLocalPullDown(bars.getMenuManager());
 		fillLocalToolBar(bars.getToolBarManager());
 	}
 
-	private void fillLocalPullDown(IMenuManager manager) {
-		manager.add(actionLoad);
-		manager.add(actionPrefs);
-		manager.add(new Separator());
-	}
 
-	private void fillContextMenu(IMenuManager manager) {
-		manager.add(actionBuildMuleProf);
+
+//	private void fillLocalPullDown(IMenuManager manager) {
 //		manager.add(actionLoad);
 //		manager.add(actionPrefs);
-		manager.add(new Separator());
-		drillDownAdapter.addNavigationActions(manager);
-		// Other plug-ins can contribute there actions here
-		manager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
-	}
+//		manager.add(new Separator());
+//		logger.info("i'm in fillLocalPullDown()");
+//	}
+
 	
 	private void fillLocalToolBar(IToolBarManager manager) {
 		manager.add(actionLoad);
+/*		manager.add(new ContributionItem("abc123") {
+		       @Override
+		        public void fill(Composite parent) {
+		    	   Button b = new Button(parent, SWT.NONE);
+		    	   b.setText("this is a button");
+		        }
+
+		        @Override
+		        public boolean isDynamic() {
+		            return true;
+		        }
+	        });
+		manager.add(new Separator());
+		Action asf = new Action() { };
+		manager.add(new ActionContributionItem(asf));
+		manager.add(new Separator());
+*/
+		
+		manager.add(new ControlContribution("asdfsdf") {
+			@Override
+			protected Control createControl(Composite parent) {
+				Combo c = new Combo(parent, SWT.READ_ONLY);
+				String org = Activator.getDefault().getPreferenceStore().getString(PreferenceConstants.ORG.getId());
+				org = String.format("%-10s", org);
+				c.setItems(org);
+				c.select(0);
+				
+				Activator.getDefault().getPreferenceStore().addPropertyChangeListener(event -> {
+					if (!event.getProperty().toLowerCase().contains("token")) {
+						logger.info(String.format("'%s' updated! %s -> %s", event.getProperty(), event.getOldValue(), event.getNewValue()));
+					} else {
+						logger.info(String.format("'%s' updated!", event.getProperty()));
+					}
+					if (PreferenceConstants.ORG.getId().equals(event.getProperty())) {
+						c.setItem(0, event.getNewValue().toString());
+					}
+				});
+				return c;
+			}
+		});
+		manager.add(new Separator());
+		manager.add(actionAsyncAPI);
 		manager.add(actionPrefs);
 		manager.add(new Separator());
-		drillDownAdapter.addNavigationActions(manager);
-	}
-	
+//		drillDownAdapter.addNavigationActions(manager);
+	}	
 	
 	
 	
 	@PostConstruct
-	public void hello() {
-		System.out.println("This is post constrcuter hellooooooo");
-//		ViewContentProvider.initialize();
+	public void postConstruct() {
+		logger.info("STARTING postConstruct() ********************\n\n>");
 	}
 	
-	private void makeActions() {
+	
+	private AnimationFuture startAnimation(AnimationRunnable runnable) {
+		ScheduledFuture<?> future = executorService.scheduleAtFixedRate(runnable, 0, AnimatedIcons.ANIMATION_DELAY_MS, TimeUnit.MILLISECONDS);
+		return new AnimationFuture(runnable, future);
+//		return future;
+	}
+
+	private ScheduledFuture<?> startAnimatedLoadIcon() {
+		ScheduledFuture<?> future = executorService.scheduleAtFixedRate(() -> {
+			Display.getDefault().syncExec(() -> {
+				
+				actionLoad.setImageDescriptor(AnimatedIcons.getImageDescriptor(AnimatedIcons.AnimType.LOADING));
+			});
+		}, 0, AnimatedIcons.ANIMATION_DELAY_MS, TimeUnit.MILLISECONDS);
+		return future;
+	}
+	
+	private void makeToolbarActions() {
 		actionLoad = new Action() {
 			public void run() {
-				showMessage("Loading/Refresh will go here");
+				logger.info("Loading/Refresh will go here");
+				actionLoad.setEnabled(false);
+				final AnimationRunnable runnable = new AnimationRunnable(actionLoad, AnimatedIcons.AnimType.LOADING, Icons.Type.REFRESH);
+//				final ScheduledFuture<?> future = startAnimatedLoadIcon();  // kick off the loading animation
+				final AnimationFuture animFuture = startAnimation(runnable);
+				executorService.submit(() -> {
+					try {
+						String token = Activator.getDefault().getPreferenceStore().getString(PreferenceConstants.TOKEN.getId());
+//						Base64.Decoder decoder = Base64.getUrlDecoder();
+//						String[] chunks = token.split("\\.");
+//						for (int i=0; i<chunks.length; i++) {
+//							String piece = new String(decoder.decode(chunks[i]));
+//							System.err.println("chunk " + i + ": " + piece);
+//						}
+						EventPortalWrapper.INSTANCE.setToken(token);
+						boolean success = EventPortalWrapper.INSTANCE.loadAll(executorService);  // blocking call until all data loaded
+						if (!success) {
+							logger.warn("Could not load all Event Portal data!  Ensure token has correct permissions.");
+							logger.warn(EventPortalWrapper.INSTANCE.getLoadErrorString());
+							StringBuilder sb = new StringBuilder("Could not load all Event Portal data!\n\nError Messages:\n");
+							for (String msg : EventPortalWrapper.INSTANCE.getLoadErrorString()) {
+								sb.append(msg).append('\n');
+							}
+							showMessageAsync(sb.toString());
+							return;
+						}
+						for (EpDataListener l : loadListeners) {
+							logger.info("calling dataloaded() on " + l);
+							l.dataLoaded();
+						}
+					} catch (Exception e) {
+						logger.error("Had issues loading Event Portal data", e);
+						e.printStackTrace();
+					} finally {
+						animFuture.cancel();
+//						future.cancel(true);
+//						actionLoad.setImageDescriptor(Icons.getImageDescriptor(Icons.Type.REFRESH));
+//						actionLoad.setEnabled(true);
+						logger.info("End of refresh!  Returning..!");
+					}
+				});
+				
 			}
 		};
-		actionLoad.setText("Action 1");
-		actionLoad.setToolTipText("Action 1 tooltip");
+		actionLoad.setText("Load EP Data");
+		actionLoad.setToolTipText("Load Event Portal data");
 		
-//		action1.setIm
-		
-		
-//		action1.setImageDescriptor(createImageDescriptor("/icons/execute.png"));
-//		action1.setImageDescriptor(createFromImage(execute));
-		actionLoad.setImageDescriptor(Icons.getInstance().getImageDescripor(Icons.Type.EXECUTE));
-//		action1.setImageDescriptor(PlatformUI.getWorkbench().getSharedImages().getImageDescriptor(ISharedImages.IMG_OBJS_INFO_TSK));
+		actionLoad.setImageDescriptor(Icons.getImageDescriptor(Icons.Type.LOAD));
 
 		
-		actionBuildMuleProf = new Action() {
-			public void run() {
-				showMessage("I am now executing Dennis' code here");
-			}
-		};
-		actionBuildMuleProf.setText("Build Mule Project");
-		actionBuildMuleProf.setImageDescriptor(Icons.getInstance().getImageDescripor(Icons.Type.MULE));
-
 		actionPrefs = new Action() {
 			public void run() {
 //				showMessage("Action 2 executed");
@@ -852,81 +583,133 @@ public class EventPortalView extends ViewPart {
 					dialog.open();
 			}
 		};
-		actionPrefs.setText("Action 2");
-		actionPrefs.setToolTipText("Action 2 tooltip");
-		actionPrefs.setImageDescriptor(Icons.getInstance().getImageDescripor(Icons.Type.GEAR));
+		actionPrefs.setText("Event Portal settings");
+		actionPrefs.setToolTipText("Configured Event Portal settings");
+		actionPrefs.setImageDescriptor(Icons.getImageDescriptor(Icons.Type.GEAR));
+//		actionPrefs.setHoverImageDescriptor(Icons.getImageDescriptor(Icons.Type.COLLAPSE));
 //		action2.setImageDescriptor(workbench.getSharedImages().getImageDescriptor(ISharedImages.IMG_OBJS_INFO_TSK));
 
-		doubleClickAction = new Action() {
+		
+		actionAsyncAPI = new Action() {
 			public void run() {
-				IStructuredSelection selection = viewer.getStructuredSelection();
-				Object obj = selection.getFirstElement();
-				showMessage("Double-click detected on "+obj.toString());
+//				showMessage("clicked on AsyncAPI import!");
+				
+//	            try {
+	            	ImportAsyncAPIWizardHack wiz2 = new ImportAsyncAPIWizardHack();
+//					IWizardRegistry wizards = PlatformUI.getWorkbench().getImportWizardRegistry();
+//					IWizardDescriptor wizard = wizards.findWizard("com.solace.ep.eclipse.wizards.ImportAsyncAPIWizard");
+//					if (wizard != null) {
+//						final IWizard wiz = wizard.createWizard();  // could throw CoreException
+						wiz2.init(PlatformUI.getWorkbench(), null);
+						final WizardDialog wd = new WizardDialog(Display.getDefault().getActiveShell(), wiz2);
+						wd.setTitle("AsyncAPI File Import Wizard");
+						logger.info("Looks like we should be about to open a dialog");
+						wd.open();
+//					} else {
+//		            	logger.info("Could not create new Mule Import dialog");
+//					}
+//	            } catch (CoreException e) {
+//	            	logger.warn("Could not create new Import dialog", e);
+//	            }
 			}
 		};
+		actionAsyncAPI.setToolTipText("Build Project from AsyncAPI file");
+		actionAsyncAPI.setImageDescriptor(Icons.getImageDescriptor(Icons.Type.ASYNC));
+	
 	}
 
-	private void hookDoubleClickAction() {
-		viewer.addDoubleClickListener(new IDoubleClickListener() {
-			public void doubleClick(DoubleClickEvent event) {
-				System.out.println(event.getViewer().getSelection());
-				doubleClickAction.run();
+	
+	
+/*	static class SlowRunnable implements Runnable {
+
+		final int job;
+		
+		SlowRunnable(int job) {
+			this.job = job;
+		}
+		
+		@Override
+		public void run() {
+			logger.info("SlowRunnable starting job " + job);
+			try {
+				Thread.sleep(1000);
+				logger.info("SlowRunnable finished job " + job);
+			} catch (InterruptedException e) {
+				logger.error("SlowRunnable job " + job + " got interrupted!");
 			}
+		}
+	}*/
+	
+	
+	static ScheduledExecutorService executorService = Executors.newScheduledThreadPool(20);
+
+	
+	static void showMessageAsync(String message) {
+		Display.getDefault().asyncExec(() -> {
+			showMessage(message);
 		});
 	}
-
-	// "Point of sale (POS) terminal" -> "PointOfSalePOSTerminal"
-	private static String helperStripNonChars(String name) {
-		StringBuilder sb = new StringBuilder();
-		boolean capNext = false;
-		for (int i=0; i<name.length(); i++) {
-			char c = name.charAt(i);
-			if (Character.isAlphabetic(c)) {
-				sb.append(capNext ? Character.toUpperCase(c) : c);
-				capNext = false;
-			} else if (Character.isDigit(c)) {
-				sb.append(c);
-				capNext = true;
-			} else {
-				capNext = true;
-			}
-		}
-		return sb.toString();
-	}
-
-	// "ACME Retail Supply Logistics" -> "com.acme.retail"
-	private static String helperMakePackageName(String name) {
-		StringBuilder sb = new StringBuilder();
-		name = "com." + name.toLowerCase();
-		boolean skipToNextAlpha = true;
-		int depth = 0;
-		for (int i=0; i<name.length(); i++) {
-			char c = name.charAt(i);
-			if (Character.isAlphabetic(c)) {
-				sb.append(c);
-				skipToNextAlpha = false;
-			} else {
-				if (!skipToNextAlpha) {
-					skipToNextAlpha = true;
-					depth++;
-					if (depth == 3) return sb.toString();  // done!
-					sb.append(".");
-				}
-			}
-		}
-		return sb.toString();
-	}
 	
-	
-	private void showMessage(String message) {
+	public static void showMessage(String message) {
 		MessageDialog.openInformation(
-			viewer.getControl().getShell(),
-			"Solace Event Portal",
+			Display.getDefault().getActiveShell(),
+			"Solace Event Portal plugin",
 			message);
 	}
 
+	static void showWarningAsync(String message) {
+		Display.getDefault().asyncExec(() -> {
+			showWarning(message);
+		});
+	}
+
+	public static void showWarning(String message) {
+		MessageDialog.openWarning(
+			Display.getDefault().getActiveShell(),
+			"Solace Event Portal plugin",
+			message);
+	}
+	
 	@Override
 	public void setFocus() {
-		viewer.getControl().setFocus();
+//		tabFolder.setFocus();
+		tabs.get(tabFolder.getSelectionIndex()).getControl().setFocus();
+//		treeViewer.getControl().setFocus();
 	}
+
+	@Override
+	public void refreshTab(EpDataListener listener) {
+		logger.info("Refresh called for tab " + listener);
+		tabFolder.getItem(listener.getIndex()).setControl(listener.getControl());
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+
+	public static boolean copyStringToClipboard(String s) {
+		try {
+//			logger.info("System property java.awt.headless = " + System.getProperty("java.awt.headless"));
+//			System.setProperty("java.awt.headless", "false");
+			StringSelection stringSelection = new StringSelection(s);
+			Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+			clipboard.setContents(stringSelection, stringSelection);
+			return true;
+		} catch (HeadlessException | AWTError | IllegalStateException | SecurityException e) {
+			logger.warn("Couldn't copy to clipboard!", e);
+			return false;
+		}
+	}
+	
 }

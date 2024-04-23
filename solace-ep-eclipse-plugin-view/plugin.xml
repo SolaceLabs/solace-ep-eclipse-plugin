@@ -20,7 +20,7 @@
    <extension
          point="org.eclipse.ui.perspectiveExtensions">
       <perspectiveExtension
-            targetID="org.eclipse.jdt.ui.JavaPerspective">
+            targetID="org.mule.tooling.ui.apiproject.perspective">
          <view
                id="com.solace.ep.eclipse.views.EventPortalView"
                relative="org.eclipse.ui.views.ProblemView"
@@ -49,5 +49,21 @@
             class="com.solace.ep.eclipse.prefs.PreferenceInitializer">
       </initializer>
    </extension>
-
+   <extension
+         point="org.eclipse.ui.importWizards">
+      <category
+            id="com.solace.ep.eclipse.wizards.asyncapiCategory"
+            name="AsyncAPI">
+      </category>
+      <wizard
+            id="com.solace.ep.eclipse.wizards.ImportAsyncAPIWizard"
+            name="Project from AsyncAPI file"
+            class="com.solace.ep.eclipse.wizards.ImportAsyncAPIWizardHack"
+            category="com.solace.ep.eclipse.wizards.asyncapiCategory"
+            icon="icons/asyncapi3.png">
+         <description>
+            Import a project from a local AsyncAPI file into the workspace.
+         </description>
+      </wizard>
+   </extension>
 </plugin>

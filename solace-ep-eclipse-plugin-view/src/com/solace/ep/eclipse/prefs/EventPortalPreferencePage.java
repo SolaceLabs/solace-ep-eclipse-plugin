@@ -1,5 +1,6 @@
 package com.solace.ep.eclipse.prefs;
 
+import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.preference.ComboFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.RadioGroupFieldEditor;
@@ -59,11 +60,18 @@ public class EventPortalPreferencePage extends FieldEditorPreferencePage impleme
 //		addField(new StringFieldEditor(PreferenceConstants.P_STRING, "A &text preference:", getFieldEditorParent()));
 
 //		addField(new StringFieldEditor(PreferenceConstants.P_STRING, "A &text preference2:", getFieldEditorParent()));
+		
+		
+		
+		addField(new StringFieldEditor(
+				PreferenceConstants.ORG.getId(),
+				PreferenceConstants.ORG.getDescription(),
+				getFieldEditorParent()));
 		// token
 		StringFieldEditor eventPortalToken = new StringFieldEditor(
-				PreferenceConstants.TOKEN.getToken(),
+				PreferenceConstants.TOKEN.getId(),
 				PreferenceConstants.TOKEN.getDescription(),
-				30, getFieldEditorParent()) {
+				40, getFieldEditorParent()) {
 			@Override
 			    protected void doFillIntoGrid(Composite parent, int numColumns) {
 			        super.doFillIntoGrid(parent, numColumns);
@@ -72,37 +80,37 @@ public class EventPortalPreferencePage extends FieldEditorPreferencePage impleme
 			};
 		addField(eventPortalToken);
 		addField(new StringFieldEditor(
-				PreferenceConstants.API_URL.getToken(),
+				PreferenceConstants.API_URL.getId(),
 				PreferenceConstants.API_URL.getDescription(),
 				getFieldEditorParent()));
 
-		this.createNoteComposite(getFont(), getFieldEditorParent(), " ", " ");  // blank line?
+//		this.createNoteComposite(getFont(), getFieldEditorParent(), " ", " ");  // blank line?  nope doesn't work
 
-		ComboFieldEditor combo = new ComboFieldEditor(PreferenceConstants.TIME_FORMAT.getToken(),
+		ComboFieldEditor combo = new ComboFieldEditor(PreferenceConstants.TIME_FORMAT.getId(),
 				PreferenceConstants.TIME_FORMAT.getDescription(),
 				new String[][] {
-					{ PreferenceConstants.TIME_FORMAT_RELATIVE.getDescription(), PreferenceConstants.TIME_FORMAT_RELATIVE.getToken() },
-					{ PreferenceConstants.TIME_FORMAT_ISO.getDescription(), PreferenceConstants.TIME_FORMAT_ISO.getToken() },
-					{ PreferenceConstants.TIME_FORMAT_NORMAL.getDescription(), PreferenceConstants.TIME_FORMAT_NORMAL.getToken() },
+					{ PreferenceConstants.TIME_FORMAT_RELATIVE.getDescription(), PreferenceConstants.TIME_FORMAT_RELATIVE.getId() },
+					{ PreferenceConstants.TIME_FORMAT_ISO.getDescription(), PreferenceConstants.TIME_FORMAT_ISO.getId() },
+					{ PreferenceConstants.TIME_FORMAT_NORMAL.getDescription(), PreferenceConstants.TIME_FORMAT_NORMAL.getId() },
 				},
 				getFieldEditorParent());
 		addField(combo);
 		
 		addField(new StringFieldEditor(
-				PreferenceConstants.WEB_URL.getToken(),
+				PreferenceConstants.WEB_URL.getId(),
 				PreferenceConstants.WEB_URL.getDescription(),
 				getFieldEditorParent()));
 
 		RadioGroupFieldEditor colour = new RadioGroupFieldEditor(
-				PreferenceConstants.COLOUR_SCHEME.getToken(),
+				PreferenceConstants.COLOUR_SCHEME.getId(),
 				PreferenceConstants.COLOUR_SCHEME.getDescription(),
 				3,
 				new String[][] {
-					{ PreferenceConstants.COLOUR_SCHEME_DARK.getDescription() , PreferenceConstants.COLOUR_SCHEME_DARK.getToken() },
-					{ PreferenceConstants.COLOUR_SCHEME_LIGHT.getDescription() , PreferenceConstants.COLOUR_SCHEME_LIGHT.getToken() }
+					{ PreferenceConstants.COLOUR_SCHEME_DARK.getDescription() , PreferenceConstants.COLOUR_SCHEME_DARK.getId() },
+					{ PreferenceConstants.COLOUR_SCHEME_LIGHT.getDescription() , PreferenceConstants.COLOUR_SCHEME_LIGHT.getId() }
 				},
 				getFieldEditorParent());
-		colour.setEnabled(false, getFieldEditorParent());  // not yet!
+//		colour.setEnabled(false, getFieldEditorParent());  // not yet!
 		addField(colour);
 		
 //		this.createNoteComposite(getFont(), getFieldEditorParent(), "WHAT", "here is some text.");

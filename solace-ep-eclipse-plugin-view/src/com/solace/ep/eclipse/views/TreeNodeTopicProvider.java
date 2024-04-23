@@ -12,19 +12,19 @@ import org.eclipse.swt.widgets.Display;
 
 class TreeNodeTopicProvider extends ColumnLabelProvider implements IFontProvider {
 	
-	final Font font;
+//	final Font font;
 //	final FontData fd;
-	final Font fwFont;
-	final Font bFont;
+//	final Font fwFont;
+//	final Font bFont;
 
-	public TreeNodeTopicProvider(Font origFont, Display display) {
+	public TreeNodeTopicProvider(/* Font origFont, */ Display display) {
 //		font = tree.getFont();
-		font = origFont;
-		FontData fd;
-		fd = font.getFontData()[0];
-//		nFont = new Font(font.getDevice(), fd);
-		bFont = new Font(display, new FontData( fd.getName(), fd.getHeight(), SWT.BOLD ) );
-		fwFont = new Font(display, new FontData( "Consolas", fd.getHeight(), SWT.BOLD ) );
+//		font = origFont;
+//		FontData fd;
+//		fd = font.getFontData()[0];
+////		nFont = new Font(font.getDevice(), fd);
+//		bFont = new Font(display, new FontData( fd.getName(), fd.getHeight(), SWT.BOLD ) );
+//		fwFont = new Font(display, new FontData( "Consolas", fd.getHeight(), SWT.BOLD ) );
 	}
 
 	@Override
@@ -39,7 +39,8 @@ class TreeNodeTopicProvider extends ColumnLabelProvider implements IFontProvider
 
 	@Override
 	public Font getFont(Object element) {
-		return fwFont;
+		return EventPortalView.fonts.get("topic");
+//		return fwFont;
 		// TODO Auto-generated method stub
 //		return super.getFont(element);
 	}

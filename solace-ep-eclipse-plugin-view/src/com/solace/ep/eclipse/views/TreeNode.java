@@ -1,6 +1,5 @@
 package com.solace.ep.eclipse.views;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -16,38 +15,43 @@ class TreeNode implements IAdaptable  {
 	final Object epObject;
 	final Icons.Type iconType;
 	final SupportedObjectType type;
+	final String origDomainId;
 	private TreeNode parent = null;
 //	private ArrayList<TreeNode> children = null;
 	private Map<String,TreeNode> children = null;
 
 	public static TreeNode createRootNode() {
-		return new TreeNode(null, null, null, null, "root");
+		return new TreeNode(null, null, null, null, null, "root");
 	}
 	
 	public static class Builder {
 		private String id = null;
 //		private String[] content = new String[0];
 		private Object epObject;
-		private Icons.Type iconType;
-		private SupportedObjectType type;
+		private Icons.Type iconType;// = Icons.Type.vAPP;
+		private String origDomainId;
+		private SupportedObjectType type;// = SupportedObjectType.APPLICATION_VERSION;
 
 		public Builder withEpType(SupportedObjectType type) {	this.type = type; return this; }
 		public Builder withId(String id) {						this.id = id; return this; }
 		public Builder withEpObject(Object epObject) {			this.epObject = epObject; return this; }
 		public Builder withIconType(Icons.Type iconType) {		this.iconType = iconType; return this; }
+		public Builder withOrigDomainId(String id) {			this.origDomainId = id; return this; }
 		public TreeNode build(String... content) {
-			if (id == null) throw new IllegalArgumentException("Builder not finished, id is null!");
-			return new TreeNode(type, id, epObject, iconType, content);
+			// id can be null for a node (e.g. for a primitive schema)
+			if (id == null) throw new IllegalArgumentException("Builder not finished, id is null! Need id for Map");
+			return new TreeNode(type, id, epObject, origDomainId, iconType, content);
 		}
 	}
 	
 	
 	
-	private TreeNode(SupportedObjectType type, String id, Object epObject, Icons.Type iconType, String... cols) {
+	private TreeNode(SupportedObjectType type, String id, Object epObject, String origDomainId, Icons.Type iconType, String... cols) {
 		this.type = type;
-		this.epObject = epObject;
-		this.iconType = iconType;
 		this.id = id;
+		this.epObject = epObject;
+		this.origDomainId = origDomainId;
+		this.iconType = iconType;
 		this.content = cols;
 	}
 
@@ -84,7 +88,7 @@ class TreeNode implements IAdaptable  {
 
 	@Override
 	public String toString() {
-		return "toString(): " + Arrays.toString(content);
+		return String.format("TreeNode (%s): %s", id, Arrays.toString(content));
 //		return getName().toString();
 	}
 	
@@ -92,6 +96,7 @@ class TreeNode implements IAdaptable  {
 	
 	@Override
 	public <T> T getAdapter(Class<T> key) {
+//		System.err.println("getAdapter() got called: " + key.toGenericString());
 		return null;
 	}
 }

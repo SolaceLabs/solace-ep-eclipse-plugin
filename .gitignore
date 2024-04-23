@@ -12,9 +12,9 @@ _site
 docs/_site
 .idea
 log/
-.classpath
-.project
-.settings/
+notes.ignore
+
+solace-ep-eclipse-plugin-view/src/com/solace/ep/eclipse/test
 
 keystore.jks
 server.cert

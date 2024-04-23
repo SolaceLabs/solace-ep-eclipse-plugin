@@ -1,7 +1,9 @@
-# solace-ep-eclipse-plugin
+# Solace PubSub+ Event Portal plugin for Mule and Eclipse
 
-This project contains a PubSub+ Event Portal plugin for Mule AnyPoint Studio (legacy) or any other Eclipse-based RCP (e.g. Spring Tool Suite).
+This project contains a PubSub+ Event Portal plugin for Mule AnyPoint Studio or any other Eclipse-based RCP (e.g. Spring Tool Suite).
 With the plugin installed, you can browse the data inside your PubSub+ Event Portal Designer, viewing Applications, Events, Schemas, EventAPIs and more.
+
+![Click on "Install New Software"](readme-assets/2024-04-23T21-02-18.png)
 
 When running inside Mule AnyPoint Studio, you are also able to generate a skeleton Mule Flow project, with all the appropriate components.  (more here)
 

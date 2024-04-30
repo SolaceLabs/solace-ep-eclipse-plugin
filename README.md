@@ -16,7 +16,7 @@ With the plugin installed, you can browse the data inside your PubSub+ Event Por
 
 ## Installation
 
-The easiest way to install is to configure a new Update Site, pointing to the latest release hosted at `https://solace.dev/plugins`
+Configure a new Update Site, pointing to the latest release hosted at: `https://solace.dev/plugins`
 
 ### Help → Install New Software...
 ![Click on "Install New Software"](readme-assets/install-new-software.png)
@@ -69,8 +69,8 @@ We are now ready to configure the plugin.
 
 ### Copy your token from Event Portal
 
-Give your token a name, this is not an identifier, but a human-readable string for your benefit.
-Copy the long token string into the obsucred field.
+Give your token a name, based on your organization.  This is not an identifier, but a human-readable string for your benefit.
+Copy the long token string into the obscured field.
 
 If you access the web Event Portal SaaS using SSO, you may need to update the "URL for web portal"
 with a different URL than the default `console.solace.cloud`.
@@ -81,7 +81,7 @@ Apply and Close.  You are now ready to use the Event Portal plugin.
 
 
 
-### Select site, and install plugin
+### Load the Event Portal data
 
 Click the green "play" button ▶ to load Event Portal data.  Depending on how much data is inside the 
 organization, this may take some time.
@@ -111,7 +111,7 @@ For more information try these resources:
 Contributions are encouraged! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
 
 ## Authors
-See the list of [contributors](https://github.com/solacecommunity/<github-repo>/graphs/contributors) who participated in this project.
+See the list of [contributors](https://github.com/SolaceLabs/solace-ep-eclipse-plugin/graphs/contributors) who participated in this project.
 
 ## License
 See the [LICENSE](LICENSE) file for details.

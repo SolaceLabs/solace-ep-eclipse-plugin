@@ -8,8 +8,10 @@
 - See if this could somehow work for Kafka brokers
 - Enable SCSt project generation if in vanilla Eclipse or STS
 
-- Figure out why Site generation messes up on Z: and not C:
-- Figure out how to programmatically build/package plugin, Feature, and Site
+X Figure out how to programmatically build/package plugin, Feature, and Site
+   - done for AsyncAPI from disk.  Backport into auto-downloaded from portal
+   X catch all (runtime) exceptions coming out of generator, ensure wizards close afterwards
+   - make 2nd page to allow users to enter project name, packagename, version, etc.
 
 
 
@@ -28,3 +30,4 @@ X custom animated icon class and methods for animation
 X implemented registries for image, font, and color to prevent SWT native widgets leaking resources
 
 
+- Figure out why Site generation messes up on Z: and not C:

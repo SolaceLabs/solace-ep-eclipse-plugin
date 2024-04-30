@@ -126,7 +126,7 @@ public class ImportWizardPageHack extends WizardPage {
 			IPath path = new Path(ImportWizardPageHack.this.editor.getStringValue());
 //			setFileName(path.lastSegment());
 		});
-		String[] extensions = new String[] { "*.json" }; //NON-NLS-1
+		String[] extensions = new String[] { "*.json;*.yaml" }; //NON-NLS-1
 		editor.setFileExtensions(extensions);
 		fileSelectionArea.moveAbove(null);
 		

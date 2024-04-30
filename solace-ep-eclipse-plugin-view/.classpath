@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
+	<classpathentry exported="true" kind="lib" path="lib/angus-activation-2.0.2.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/jakarta.activation-api-2.1.3.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/jakarta.xml.bind-api-4.0.2.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/jaxb-core-4.0.5.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/jaxb-impl-4.0.5.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/jackson-dataformat-yaml-2.17.0.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/snakeyaml-2.2.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/solace-ep-muleflow-1.0.4.jar"/>

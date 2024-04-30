@@ -1,19 +1,16 @@
-# Solace PubSub+ Event Portal plugin for Mule and Eclipse
+# Solace Event Portal plugin for Mule and Eclipse
 
-This project contains a PubSub+ Event Portal plugin for Mule AnyPoint Studio or any other Eclipse-based RCP (e.g. Spring Tool Suite).
-With the plugin installed, you can browse the data inside your PubSub+ Event Portal Designer, viewing Applications, Events, Schemas, EventAPIs and more.
+This project contains the PubSub+ Event Portal plugin for Mule AnyPoint Studio or any other Eclipse-based IDE    (e.g. Spring Tool Suite).
+With the plugin installed, you can browse the data inside your PubSub+ Event Portal Designer, viewing Applications, Events, Schemas, EventAPIs and more, and can even generate entire working skeleton proejcts!
 
 ![Click on "Install New Software"](readme-assets/2024-04-23T21-02-18.png)
 
-When running inside Mule AnyPoint Studio, you are also able to generate a skeleton Mule Flow project, with all the appropriate components.  (more here)
-
-Watch this video!  https://youtube.com/live/TJLPHxjNxCI
+**Watch this video!**  https://youtube.com/live/TJLPHxjNxCI&t=97
 
 ### Contents
 
-- Installation
-- Running
-- Building
+- [Installation](#installation)
+- [Running](#running)
 
 
 
@@ -24,10 +21,10 @@ The easiest way to install is to configure a new Update Site, pointing to the la
 ### Help → Install New Software...
 ![Click on "Install New Software"](readme-assets/install-new-software.png)
 
-### Add... new site
+### Add... a new site
 ![Click on "Install New Software"](readme-assets/add-new-site.png)
 
-### Site details `https://solace.dev/plugins`
+### Site details: `https://solace.dev/plugins`
 ![Click on "Install New Software"](readme-assets/site-details.png)
 
 ### Select site, and install plugin
@@ -36,53 +33,90 @@ The easiest way to install is to configure a new Update Site, pointing to the la
 
 
 
-## Building
+## Running
 
-To build the plugin, you will need a copy of the Eclipse IDE, and the RCP (Rich Client Platform) plugins.  Search all available Update Sites for "RCP" and install the tools and developer resources found.
-
-- First you'll need to download or clone this repo
-- In Eclipse, switch to the "Plug-in development" Perspective
-- From File → Import... → General → Existing Projects into Workspace
-- Navigate to the "root" directory of this project (not the `view` or `feature` subdirectories)
-- Import!
+Once installed, you will need to configure a few user preferences.  Before you do, you will require an API token from the PubSub+ Event Portal.
 
 
-In order to construct a deployable "site" for updates, you will need to perform some additional steps.  This is required as it was noted during development that reusing a previous site caused some issues (the "Group By" category stopped working).
+### Log into the Event Portal
+Log into the Event Portal.  Click on the "user" icon in the bottom-left corner, and select Token Management.
+
+![Click on "Install New Software"](readme-assets/2024-04-24T15-12-24.png)
 
 
 
+### Tick every "Read" option
+Select every checkbox under the "Read" Column, all the way down the page.
 
+![Click on "Install New Software"](readme-assets/2024-04-24T15-36-27.png)
 
-### File → New → Other...
-Make sure the Perspective in Eclipsed IDE is set to "Plug-in development"
+### Create the token
+Once you create the token, copy the long string either to the clipboard or to a file.
 
-![Click on "Install New Software"](readme-assets/2024-04-23T20-14-30.png)
+![Click on "Install New Software"](readme-assets/2024-04-26T20-11-14.png)
 
-
-### Plug-in Development → Update Site Project → Next
-
-![Click on "Install New Software"](readme-assets/2024-04-23T20-14-52.png)
-
-
-### Choose any location you wish
-This temporary Update Site plugin can be saved anywhere.  It is not necessary to generate the Web Resources.
-
-![Click on "Install New Software"](readme-assets/2024-04-23T20-15-20.png)
-
-
-### Add New Category 
-Inside the `site.xml` file (which should have opened automatically), create a New Category:
-- **ID:** `BeEventDriven`
-- **Name:** `Event-Driven Integration`
-
-![Click on "Install New Software"](readme-assets/2024-04-23T20-26-06.png)
+We are now ready to configure the plugin.
 
 
 
-### Add Feature...
-Choose the Solace Event Portal Eclipse Feature plugin.  In Elicpse RCP speak, the Feature plugin is a "container" of one or more other related plugins (for example: a new View, an import wizard, a menu item plugin, etc.).  For the EP plugin, there is just one View plugin.
 
-![Click on "Install New Software"](readme-assets/2024-04-23T20-26-28.png)
+### Window → Preferences
+![Click on "Install New Software"](readme-assets/2024-04-24T14-43-25.png)
+
+### Click on 'Solace PubSub+'
+![Click on "Install New Software"](readme-assets/2024-04-24T14-33-12.png)
+
+
+### Copy your token from Event Portal
+
+Give your token a name, this is not an identifier, but a human-readable string for your benefit.
+Copy the long token string into the obsucred field.
+
+If you access the web Event Portal SaaS using SSO, you may need to update the "URL for web portal"
+with a different URL than the default `console.solace.cloud`.
+
+![Click on "Install New Software"](readme-assets/2024-04-24T14-33-35.png)
+
+Apply and Close.  You are now ready to use the Event Portal plugin.
+
+
+
+### Select site, and install plugin
+
+Click the green "play" button ▶ to load Event Portal data.  Depending on how much data is inside the 
+organization, this may take some time.
+
+![Click on "Install New Software"](readme-assets/2024-04-24T14-35-46.png)
+
+Browse the various objects.  Double-click to fully expand a section of the tree.  Right-click on
+any object to see what context-specific actions are available.  For example, versioned Applications
+and versioned Event APIs can generate skeleton starter proejcts.
+
+
+
+
+
+
+
+
+## Resources
+This is not an officially supported Solace product.
+
+For more information try these resources:
+- Ask the [Solace Community](https://solace.community)
+- The Solace Developer Portal website at: https://solace.dev
+
+
+## Contributing
+Contributions are encouraged! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
+
+## Authors
+See the list of [contributors](https://github.com/solacecommunity/<github-repo>/graphs/contributors) who participated in this project.
+
+## License
+See the [LICENSE](LICENSE) file for details.
+
+
 
 
 

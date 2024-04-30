@@ -53,7 +53,6 @@ public class ImportAsyncAPIWizardHack extends Wizard implements IImportWizard {
 //        return true;
         
         return muleWizard.performFinish();
-        
 	}
 	
 	
@@ -150,21 +149,13 @@ public class ImportAsyncAPIWizardHack extends Wizard implements IImportWizard {
 					setFilePathMethod.invoke(secondPage, generatedArchivePath.toString());
 					logger.info("Made it through!");
 
-				    
-				    
-				    
-				    
-				    
-
 		        } catch (Exception e) {
 			    	logger.error("EclipseProjectGenerator.createMuleProject() failed", e);
 			    	String err = String.format("Could not generate Mule project from AsyncAPI.%n%n%s%n%nCheck logs at %s for details.", e.toString(), PreferenceConstants.LOG_LOCATION.getDescription());
+			    	muleWizard.performCancel();
 			    	EventPortalView.showWarning(err);
 //		            return;
 		        }
-
-	    		
-	    		
 	    	} catch (FileNotFoundException e) {  // should be hard since we picked it out of a box
 	    		
 	    	}
@@ -180,8 +171,8 @@ public class ImportAsyncAPIWizardHack extends Wizard implements IImportWizard {
 	public void init(IWorkbench workbench, IStructuredSelection selection) {
 		logger.info("ImportAsyncAPIWizardHack() init(), workbench={}, selection={}", workbench, selection);
 		setWindowTitle("AsyncAPI File Import Wizard"); //NON-NLS-1
-		setNeedsProgressMonitor(true);
-		System.out.println(selection);
+		setNeedsProgressMonitor(false);
+//		System.out.println(selection);
 		firstPage = new ImportWizardPageHack("Import AsyncAPI File",selection); //NON-NLS-1
 	}
 	

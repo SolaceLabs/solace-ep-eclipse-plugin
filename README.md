@@ -5,12 +5,14 @@ With the plugin installed, you can browse the data inside your PubSub+ Event Por
 
 ![Click on "Install New Software"](readme-assets/2024-04-23T21-02-18.png)
 
-**Watch this video!**  https://youtube.com/live/TJLPHxjNxCI&t=97
+**Watch this video for an overview!** https://www.youtube.com/watch?v=Xe9VBn7El94
+
 
 ### Contents
 
 - [Installation](#installation)
 - [Running](#running)
+- [Resources](#resources)
 
 
 
@@ -105,6 +107,9 @@ This is not an officially supported Solace product.
 For more information try these resources:
 - Ask the [Solace Community](https://solace.community)
 - The Solace Developer Portal website at: https://solace.dev
+- [Solace Office Hours deep-dive](https://youtube.com/live/TJLPHxjNxCI?t=470s)
+
+
 
 
 ## Contributing

@@ -5,7 +5,9 @@ With the plugin installed, you can browse the data inside your PubSub+ Event Por
 
 ![Click on "Install New Software"](readme-assets/2024-04-23T21-02-18.png)
 
-![Click on "**Watch this video!**"](https://www.youtube.com/watch?v=Xe9VBn7El94)
+
+[**WATCH THIS VIDEO TO SEE IT IN ACTION**](https://www.youtube.com/watch?v=video-id)
+
 
 ### Contents
 

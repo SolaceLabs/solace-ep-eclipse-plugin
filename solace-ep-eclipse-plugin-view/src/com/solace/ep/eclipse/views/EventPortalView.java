@@ -534,6 +534,7 @@ public class EventPortalView extends ViewPart implements RefreshListener {
 //							System.err.println("chunk " + i + ": " + piece);
 //						}
 						EventPortalWrapper.INSTANCE.setToken(token);
+						EventPortalWrapper.INSTANCE.addUserAgentDetails("Eclipse/Mule plugin 20241014");
 						boolean success = EventPortalWrapper.INSTANCE.loadAll(executorService);  // blocking call until all data loaded
 						if (!success) {
 							logger.warn("Could not load all Event Portal data!  Ensure token has correct permissions.");

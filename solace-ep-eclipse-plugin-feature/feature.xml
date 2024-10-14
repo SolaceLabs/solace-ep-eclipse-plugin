@@ -2,7 +2,7 @@
 <feature
       id="com.solace.ep.eclipse"
       label="Solace PubSub+ Event Portal plugin"
-      version="0.0.2.qualifier"
+      version="0.0.3"
       provider-name="Solace Inc.">
 
    <description>
@@ -218,9 +218,9 @@ limitations under the License.
 
    <plugin
          id="com.solace.ep.eclipse.ui.EventPortal"
-         download-size="14000"
+         download-size="0"
          install-size="0"
-         version="0.0.0"
+         version="0.0.3"
          unpack="false"/>
 
 </feature>

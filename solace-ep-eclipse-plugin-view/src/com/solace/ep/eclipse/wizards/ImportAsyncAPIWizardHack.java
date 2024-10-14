@@ -22,10 +22,10 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.wizards.IWizardDescriptor;
 import org.eclipse.ui.wizards.IWizardRegistry;
 
+import com.solace.ep.codegen.mule.eclipse.EclipseProjectGenerator;
 import com.solace.ep.eclipse.prefs.PreferenceConstants;
 import com.solace.ep.eclipse.views.EventPortalView;
 import com.solace.ep.eclipse.views.UsefulUtils;
-import com.solace.ep.muleflow.eclipse.EclipseProjectGenerator;
 
 import dev.solace.aaron.useful.FileUtils;
 
